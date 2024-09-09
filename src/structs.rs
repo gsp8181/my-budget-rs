@@ -1,5 +1,6 @@
 use std::fmt;
 use rocket_sync_db_pools::diesel;
+use bigdecimal::{BigDecimal, FromPrimitive};
 use serde::{Deserialize, Serialize};
 use diesel::{
     deserialize::FromSql, prelude::AsChangeset, serialize::{Output, ToSql}, sql_types::Text, sqlite::{Sqlite, SqliteValue}, AsExpression, FromSqlRow, Identifiable, Insertable, Queryable
@@ -7,16 +8,16 @@ use diesel::{
 
 #[derive(Debug, Serialize)]
 pub(crate) struct PublicItem {
-    pub amount: Decimal,
-    pub remaining_week: Decimal,
-    pub end_of_week: Decimal,
-    pub full_weekend: Decimal,
-    pub monthly_debits: Decimal,
-    pub monthly_credits: Decimal,
-    pub net_saved_this_month: Decimal,
-    pub card_held_total: Decimal,
-    pub net_saved_avg: Decimal,
-    pub saved_this_year: Decimal,
+    pub amount: BigDecimal,
+    pub remaining_week: BigDecimal,
+    pub end_of_week: BigDecimal,
+    pub full_weekend: BigDecimal,
+    pub monthly_debits: BigDecimal,
+    pub monthly_credits: BigDecimal,
+    pub net_saved_this_month: BigDecimal,
+    pub card_held_total: BigDecimal,
+    pub net_saved_avg: BigDecimal,
+    pub saved_this_year: BigDecimal,
     pub today: Vec<DBObj>,
 }
 
@@ -181,6 +182,7 @@ impl TryFrom<&str> for Category {
 }
 
 pub const PAYDAY: u32 = 30;
-pub const WEEKDAY_SAVING: Decimal = dec!(25);
-pub const DAILY_RATE: Decimal = dec!(40);
-pub const TOTAL_PAY: Decimal = dec!(1000.00);
+pub const WEEKDAY_SAVING:i32 = 25;
+pub const DAILY_RATE:i32 = 40;
+pub const TOTAL_PAY_TOP:&str = "1000";
+pub const TOTAL_PAY_BOTTOM:&str = "0";
