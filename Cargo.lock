@@ -154,7 +154,6 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits",
- "serde",
 ]
 
 [[package]]
@@ -926,7 +925,6 @@ dependencies = [
 name = "my-budget"
 version = "0.0.0"
 dependencies = [
- "bigdecimal",
  "chrono",
  "diesel",
  "diesel-derive-enum",

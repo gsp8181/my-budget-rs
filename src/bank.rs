@@ -7,7 +7,7 @@ use crate::store::Result;
 
 use crate::Db;
 
-use crate::helper::{get_attributes, re_json};
+use crate::helper::get_attributes;
 use crate::store::{
     delete_record_by_id, get_record_by_id, insert_record, modify_record_by_id, print_all_values,
 };
@@ -36,9 +36,7 @@ async fn get_by_id(db: Db, id: i32) -> Option<Json<DBObjDBIntermediate>> {
 async fn post(db: Db, obj: Json<DBObjIn>) -> Json<DBObjDBIntermediate> {
     let result = insert_record(db, DB_NAME, CATEGORY, obj.0, get_attributes(ATTRIBUTES));
 
-    Json(result.await.unwrap())
-    //re_json(result.await).unwrap()
-}
+    Json(result.await.unwrap())}
 
 #[put("/<id>", format = "json", data = "<obj>")]
 async fn put(db: Db, id: i32, obj: Json<DBObjIn>) -> Result<Json<DBObjDBIntermediate>> {

@@ -21,14 +21,15 @@ lazy_static! {
     static ref my_mutex: Mutex<i32> = Mutex::new(0i32);
 }
 
-pub fn get_collection() -> Vec<DBObj> {
-    //TODO: load blank if file does not exist
-    let mut file = File::open("store.json").unwrap();
-    let mut buff = String::new();
-    file.read_to_string(&mut buff).unwrap();
+pub async fn get_collection(db: Db) -> Vec<DBObjDBIntermediate> {
+    let ids: Vec<DBObjDBIntermediate> = db
+    .run(move |conn| {
+        item::table
+            .load(conn)
+    })
+    .await.unwrap();
 
-    let result: Vec<DBObj> = serde_json::from_str(&buff).unwrap(); //TODO: make result error handling
-    result
+    ids
 }
 
 pub async fn print_all_values(

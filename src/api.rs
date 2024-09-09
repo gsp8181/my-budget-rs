@@ -1,70 +1,82 @@
 use std::str::FromStr;
 
-use bigdecimal::{BigDecimal, FromPrimitive};
 use chrono::{DateTime, Datelike, Local, Months, NaiveDate, TimeZone};
 use rocket::fairing::AdHoc;
 use rocket::serde::json::Json;
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
 
+use crate::store::get_collection;
 use crate::structs::{
-    Category, DBObj, Db_Name, PublicItem, DAILY_RATE, PAYDAY, TOTAL_PAY_BOTTOM, TOTAL_PAY_TOP, WEEKDAY_SAVING,
+    Category, DBObj, Db_Name, PublicItem, DAILY_RATE, PAYDAY, TOTAL_PAY, WEEKDAY_SAVING,
 };
 
-use crate::store::get_collection as get_test_data;
+use crate::Db;
 
-fn test_data() -> PublicItem {
-    let data = get_test_data();
+async fn test_data(db: Db) -> PublicItem {
+    let data_from_db = get_collection(db).await;
+    let mut results: Vec<DBObj> = Vec::new();
+    for object in data_from_db {
+        let new_obj = DBObj{
+            id:object.id,
+            amount: match Decimal::from_str(object.amount.as_str()) {
+                Ok(am) => am,
+                Err(_) => dec!(0),
+            },
+            oldId: object.oldId,
+            category: object.category,
+            name: object.name,
+            day: object.day,
+            cardid: object.cardid,
+            dbName: object.dbName,
+        };
+        results.push(new_obj);
+    }
 
     return PublicItem {
-        amount: calculate(&data),
-        remaining_week: remaining_week(&data),
-        end_of_week: end_of_week(&data),
-        full_weekend: full_weekend(&data),
-        monthly_debits: sum_of_debits(&data),
-        monthly_credits: sum_of_credits(&data),
-        net_saved_this_month: BigDecimal::from_i32(-1).unwrap(),
-        card_held_total: sum_of_card_held(&data),
-        net_saved_avg: net_saved_avg(&data),
-        saved_this_year: saved_this_year(&data),
-        today: get_items_today(&data),
+        amount: calculate(&results),
+        remaining_week: remaining_week(&results),
+        end_of_week: end_of_week(&results),
+        full_weekend: full_weekend(&results),
+        monthly_debits: sum_of_debits(&results),
+        monthly_credits: sum_of_credits(&results),
+        net_saved_this_month: dec!(-1),
+        card_held_total: sum_of_card_held(&results),
+        net_saved_avg: net_saved_avg(&results),
+        saved_this_year: saved_this_year(&results),
+        today: get_items_today(&results),
     };
 }
 
 fn get_items_today(data: &[DBObj]) -> Vec<DBObj> {
-    let today1 = DBObj {
-        id: Some(59),
-        oldId: None,
-        category: Category::recurring,
-        name: String::from("Applecare"),
-        day: Some(4),
-        amount: BigDecimal::from_i32(-10).unwrap(),
-        cardid: None,
-        dbName: Db_Name::debit,
-    };
+    let mut results: Vec<DBObj> = Vec::new();
 
-    vec![today1]
+
+    results
 }
 
-fn saved_this_year(data: &[DBObj]) -> BigDecimal {
-    let total = (sum_of_credits(data) - sum_of_debits(data)) * BigDecimal::from_u8(12).unwrap();
+fn saved_this_year(data: &[DBObj]) -> Decimal {
+    let total = (sum_of_credits(data) - sum_of_debits(data)) * dec!(12);
 
-    let daily_total = BigDecimal::from_i32(DAILY_RATE).unwrap() * BigDecimal::from_str(&"365.25").unwrap();
+    let daily_total = DAILY_RATE * dec!(365.25);
 
     total - daily_total
     //var dailyTotal = dailyRate * (new DateTime(DateTime.Now.Year, 12, 31)).DayOfYear;
 }
 
-fn net_saved_avg(data: &[DBObj]) -> BigDecimal {
+fn net_saved_avg(data: &[DBObj]) -> Decimal {
     //TODO: not 31
 
     let total = sum_of_credits(data) - sum_of_debits(data);
 
-    let daily_total = BigDecimal::from_i32(DAILY_RATE).unwrap() * BigDecimal::from_u8(31).unwrap();
+    let daily_total = DAILY_RATE * dec!(31);
 
     total - daily_total
 }
 
-fn sum_of_card_held(data: &[DBObj]) -> BigDecimal {
-    let mut amount = BigDecimal::from_u8(0).unwrap();
+fn sum_of_card_held(data: &[DBObj]) -> Decimal {
+    let mut amount = dec!(0);
     for bank_obj in data {
         if let DBObj {
             dbName: Db_Name::credit,
@@ -72,14 +84,14 @@ fn sum_of_card_held(data: &[DBObj]) -> BigDecimal {
             ..
         } = bank_obj
         {
-            amount += bank_obj.amount.clone();
+            amount += bank_obj.amount;
         }
     }
     amount
 }
 
-fn sum_of_credits(data: &[DBObj]) -> BigDecimal {
-    let mut amount = BigDecimal::from_u8(0).unwrap();
+fn sum_of_credits(data: &[DBObj]) -> Decimal {
+    let mut amount = dec!(0);
     for bank_obj in data {
         if let DBObj {
             dbName: Db_Name::credit,
@@ -87,14 +99,14 @@ fn sum_of_credits(data: &[DBObj]) -> BigDecimal {
             ..
         } = bank_obj
         {
-            amount += bank_obj.amount.clone();
+            amount += bank_obj.amount;
         }
     }
-    amount + BigDecimal::from_str(&format!("{}.{}", TOTAL_PAY_TOP, TOTAL_PAY_BOTTOM)).unwrap()
+    amount + TOTAL_PAY
 }
 
-fn sum_of_debits(data: &[DBObj]) -> BigDecimal {
-    let mut amount = BigDecimal::from_u8(0).unwrap();
+fn sum_of_debits(data: &[DBObj]) -> Decimal {
+    let mut amount = dec!(0);
     for bank_obj in data {
         match bank_obj {
             DBObj {
@@ -106,7 +118,7 @@ fn sum_of_debits(data: &[DBObj]) -> BigDecimal {
                 day: Some(_),
                 ..
             } => {
-                amount += bank_obj.amount.clone();
+                amount += bank_obj.amount;
             }
             _ => (),
         }
@@ -114,8 +126,8 @@ fn sum_of_debits(data: &[DBObj]) -> BigDecimal {
     amount
 }
 
-fn calculate(data: &Vec<DBObj>) -> BigDecimal {
-    let mut amount = BigDecimal::from_u8(0).unwrap();
+fn calculate(data: &Vec<DBObj>) -> Decimal {
+    let mut amount = dec!(0.0);
 
     let now = Local::now();
 
@@ -141,20 +153,20 @@ fn calculate(data: &Vec<DBObj>) -> BigDecimal {
         _ => panic!("Time zone error"), //todo: 500
     };
 
-    let days_to_calculate = match BigDecimal::from_i64((end_of_month_for_payday - now).num_days() + 1) //TODO: what 
+    let days_to_calculate = match Decimal::from_i64((end_of_month_for_payday - now).num_days() + 1) //TODO: what 
     {
         Some(result) => result,
         None => panic!("Calc error"),
     };
 
-    let daily_rate_to_debit = days_to_calculate * BigDecimal::from_i32(DAILY_RATE).unwrap();
+    let daily_rate_to_debit = days_to_calculate * DAILY_RATE;
 
     amount -= daily_rate_to_debit;
 
     let weekday = weekday(now);
 
-    if weekday < BigDecimal::from_u8(5).unwrap() {
-        amount -= BigDecimal::from_i32(WEEKDAY_SAVING).unwrap() * (weekday); //TODO: weekday
+    if weekday < dec!(5) {
+        amount -= WEEKDAY_SAVING * (weekday); //TODO: weekday
     }
 
     for bank_obj in data {
@@ -164,7 +176,7 @@ fn calculate(data: &Vec<DBObj>) -> BigDecimal {
                 ..
             } => {
                 if can_be_used_in_calculation(&bank_obj, &now, &next_payday, after_payday) {
-                    amount += bank_obj.amount.clone()
+                    amount += bank_obj.amount
                 }
             }
             DBObj {
@@ -172,7 +184,7 @@ fn calculate(data: &Vec<DBObj>) -> BigDecimal {
                 ..
             } => {
                 if can_be_used_in_calculation(&bank_obj, &now, &next_payday, after_payday) {
-                    amount -= bank_obj.amount.clone()
+                    amount -= bank_obj.amount
                 }
             }
         }
@@ -197,10 +209,10 @@ fn can_be_used_in_calculation(
     }
 
     let date_obj: DateTime<Local> = if get_days_from_month(now.year(), now.month())
-        >= record.day.unwrap() as u32
+        >= (record.day.unwrap() as u32) //TODO: panics if -1?
     //TODO: days in year month
     {
-        match Local.with_ymd_and_hms(now.year(), now.month(), record.day.unwrap() as u32, 0, 0, 0) {
+        match Local.with_ymd_and_hms(now.year(), now.month(), (record.day.unwrap() as u32), 0, 0, 0) {//TODO: panics if -1?
             chrono::offset::LocalResult::Single(single) => single,
             _ => panic!("Time zone error"), //todo: 500
         }
@@ -211,7 +223,7 @@ fn can_be_used_in_calculation(
         }
     };
 
-    if after_payday && (record.day.unwrap() as u32) < next_payday.day() {
+    if after_payday && (record.day.unwrap() as u32) < next_payday.day() {//TODO: panics if -1?
         return true;
     }
 
@@ -222,47 +234,47 @@ fn can_be_used_in_calculation(
     return false;
 }
 
-fn remaining_week(data: &Vec<DBObj>) -> BigDecimal {
+fn remaining_week(data: &Vec<DBObj>) -> Decimal {
     // This calculates the total to sunday, so adding the daily rate back in and the weekend savings
     let mut amount = calculate(data);
 
     let weekday = weekday(Local::now());
 
-    if weekday < BigDecimal::from_u8(5).unwrap() {
-        let weekday_amount_to_debit = BigDecimal::from_i32(WEEKDAY_SAVING).unwrap() * (weekday.clone());
+    if weekday < dec!(5) {
+        let weekday_amount_to_debit = WEEKDAY_SAVING * (weekday);
         amount += weekday_amount_to_debit;
     }
 
-    amount += BigDecimal::from_i32(DAILY_RATE).unwrap() * (BigDecimal::from_u8(7).unwrap() - weekday);
+    amount += DAILY_RATE * (dec!(7) - weekday);
 
     amount
 }
 
-fn end_of_week(data: &Vec<DBObj>) -> BigDecimal {
+fn end_of_week(data: &Vec<DBObj>) -> Decimal {
     //If friday was today, this is what the total would be
     //Add back in the weekday savings and the fridays daily rate
     let mut amount = calculate(data);
 
     let weekday = weekday(Local::now());
 
-    if weekday < BigDecimal::from_u8(5).unwrap() {
-        let weekday_amount_to_debit = BigDecimal::from_i32(WEEKDAY_SAVING).unwrap() * BigDecimal::from_u8(4).unwrap();
-        amount += weekday_amount_to_debit + BigDecimal::from_i32(DAILY_RATE).unwrap();
-    } else if weekday > BigDecimal::from_u8(5).unwrap() {
-        return BigDecimal::from_u8(0).unwrap(); //TODO: maybe a different way
+    if weekday < dec!(5) {
+        let weekday_amount_to_debit = WEEKDAY_SAVING * dec!(4);
+        amount += weekday_amount_to_debit + DAILY_RATE;
+    } else if weekday > dec!(5) {
+        return dec!(0); //TODO: maybe a different way
     }
     amount
 }
 
-fn weekday(time: DateTime<Local>) -> BigDecimal {
+fn weekday(time: DateTime<Local>) -> Decimal {
     //TODO: convert
-    match BigDecimal::from_i32(time.weekday() as i32) {
-        Some(result) => result + BigDecimal::from_u8(1).unwrap(),
+    match Decimal::from_u32(time.weekday() as u32) {
+        Some(result) => result + dec!(1),
         None => panic!("Calc error"),
     }
 }
 
-fn full_weekend(data: &Vec<DBObj>) -> BigDecimal {
+fn full_weekend(data: &Vec<DBObj>) -> Decimal {
     // I have no idea what this does
     // TODO: investigate
     // Takes off the difference between the daily rate and the weekday savings between now and the weekend?
@@ -270,18 +282,18 @@ fn full_weekend(data: &Vec<DBObj>) -> BigDecimal {
 
     let weekday = weekday(Local::now());
 
-    if weekday < BigDecimal::from_u8(5).unwrap() {
-        amount -= (BigDecimal::from_u8(5).unwrap() - weekday) * (BigDecimal::from_i32(DAILY_RATE).unwrap() -  BigDecimal::from_i32(WEEKDAY_SAVING).unwrap());
+    if weekday < dec!(5) {
+        amount -= (dec!(5) - weekday) * (DAILY_RATE - WEEKDAY_SAVING);
     }
 
     amount
 }
 
 #[get("/")]
-async fn index() -> Json<PublicItem> {
-    let user1 = test_data();
+async fn index(db: Db) -> Json<PublicItem> {
+    let user1 = test_data(db);
 
-    Json(user1)
+    Json(user1.await)
 }
 
 pub fn stage() -> AdHoc {
