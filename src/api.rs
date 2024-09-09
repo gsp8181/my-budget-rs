@@ -1,47 +1,85 @@
-use chrono::{DateTime, Datelike, Local, Months, NaiveDate, TimeZone};
+use std::str::FromStr;
+
+use chrono::{DateTime, Datelike, Local, Month, Months, NaiveDate, TimeZone};
 use rocket::fairing::AdHoc;
 use rocket::serde::json::Json;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
+use crate::store::get_collection;
+use crate::structs::item::day;
 use crate::structs::{
     Category, DBObj, Db_Name, PublicItem, DAILY_RATE, PAYDAY, TOTAL_PAY, WEEKDAY_SAVING,
 };
 
-use crate::store::get_collection as get_test_data;
+use crate::Db;
 
-fn test_data() -> PublicItem {
-    let data = get_test_data();
+async fn test_data(db: Db) -> PublicItem {
+    let data_from_db = get_collection(db).await;
+    let mut results: Vec<DBObj> = Vec::new();
+    for object in data_from_db {
+        let new_obj = DBObj {
+            id: object.id,
+            amount: match Decimal::from_str(object.amount.as_str()) {
+                Ok(am) => am,
+                Err(_) => dec!(0),
+            },
+            oldId: object.oldId,
+            category: object.category,
+            name: object.name,
+            day: object.day,
+            cardid: object.cardid,
+            dbName: object.dbName,
+        };
+        results.push(new_obj);
+    }
 
     return PublicItem {
-        amount: calculate(&data),
-        remaining_week: remaining_week(&data),
-        end_of_week: end_of_week(&data),
-        full_weekend: full_weekend(&data),
-        monthly_debits: sum_of_debits(&data),
-        monthly_credits: sum_of_credits(&data),
+        amount: calculate(&results),
+        remaining_week: remaining_week(&results),
+        end_of_week: end_of_week(&results),
+        full_weekend: full_weekend(&results),
+        monthly_debits: sum_of_debits(&results),
+        monthly_credits: sum_of_credits(&results),
         net_saved_this_month: dec!(-1),
-        card_held_total: sum_of_card_held(&data),
-        net_saved_avg: net_saved_avg(&data),
-        saved_this_year: saved_this_year(&data),
-        today: get_items_today(&data),
+        card_held_total: sum_of_card_held(&results),
+        net_saved_avg: net_saved_avg(&results),
+        saved_this_year: saved_this_year(&results),
+        today: get_items_today(&results),
     };
 }
 
 fn get_items_today(data: &[DBObj]) -> Vec<DBObj> {
-    let today1 = DBObj {
-        id: 59,
-        oldId: None,
-        category: Category::recurring,
-        name: String::from("Applecare"),
-        day: Some(4),
-        amount: dec!(-9.99),
-        cardid: None,
-        dbName: Db_Name::debit,
-    };
+    let mut results: Vec<DBObj> = Vec::new();
 
-    vec![today1]
+    let now = Local::now();
+
+    let mut dates: Vec<i32> = vec![now.day() as i32];
+
+    if now.day() == 1 {
+        let month = now.month();
+        if month == 10 || month == 5 || month == 7 || month == 12 {
+            dates.push(31)
+        } else if month == 2 {
+            dates.push(31);
+            dates.push(30);
+            dates.push(29); //TODO: but not in a leap year
+        }
+    }
+
+    data
+        .iter()
+        .filter(|x| x.day.is_some())
+        .filter(|x| dates.contains(&x.day.unwrap()))
+        .cloned().for_each(|mut x| {
+        if let Db_Name::debit = x.dbName {
+            x.amount = -x.amount
+        }
+        results.push(x)
+    });
+
+    results
 }
 
 fn saved_this_year(data: &[DBObj]) -> Decimal {
@@ -197,10 +235,19 @@ fn can_be_used_in_calculation(
     }
 
     let date_obj: DateTime<Local> = if get_days_from_month(now.year(), now.month())
-        >= record.day.unwrap()
+        >= (record.day.unwrap() as u32)
+    //TODO: panics if -1?
     //TODO: days in year month
     {
-        match Local.with_ymd_and_hms(now.year(), now.month(), record.day.unwrap(), 0, 0, 0) {
+        match Local.with_ymd_and_hms(
+            now.year(),
+            now.month(),
+            (record.day.unwrap() as u32),
+            0,
+            0,
+            0,
+        ) {
+            //TODO: panics if -1?
             chrono::offset::LocalResult::Single(single) => single,
             _ => panic!("Time zone error"), //todo: 500
         }
@@ -211,7 +258,8 @@ fn can_be_used_in_calculation(
         }
     };
 
-    if after_payday && record.day.unwrap() < next_payday.day() {
+    if after_payday && (record.day.unwrap() as u32) < next_payday.day() {
+        //TODO: panics if -1?
         return true;
     }
 
@@ -278,10 +326,10 @@ fn full_weekend(data: &Vec<DBObj>) -> Decimal {
 }
 
 #[get("/")]
-async fn index() -> Json<PublicItem> {
-    let user1 = test_data();
+async fn index(db: Db) -> Json<PublicItem> {
+    let user1 = test_data(db);
 
-    Json(user1)
+    Json(user1.await)
 }
 
 pub fn stage() -> AdHoc {

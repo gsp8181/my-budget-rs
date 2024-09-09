@@ -11,7 +11,6 @@ use crate::store::{
 };
 use crate::structs::{Category, DBObjDBIntermediate, DBObjIn, Db_Name};
 
-//TODO: template below
 #[get("/")]
 async fn get(db: Db) -> Json<Vec<DBObjDBIntermediate>> {
     let result: Vec<DBObjDBIntermediate> = print_all_values(db, DB_NAME, CATEGORY, false).await.unwrap();
@@ -52,8 +51,7 @@ pub fn stage() -> AdHoc {
     })
 }
 
-
-const CATEGORY: Category = Category::bank;
+const CATEGORY: Category = Category::recurring;
 const DB_NAME: Db_Name = Db_Name::credit;
-const ATTRIBUTES: &str = "name,amount";//TODO:enum?
-const CONTROLLERNAME: &str = "bank";
+const ATTRIBUTES: &str = "name,amount,day"; //TODO:enum?
+const CONTROLLERNAME: &str = "regularcredit";

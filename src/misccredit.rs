@@ -53,7 +53,7 @@ pub fn stage() -> AdHoc {
 }
 
 
-const CATEGORY: Category = Category::bank;
+const CATEGORY: Category = Category::misc;
 const DB_NAME: Db_Name = Db_Name::credit;
 const ATTRIBUTES: &str = "name,amount";//TODO:enum?
-const CONTROLLERNAME: &str = "bank";
+const CONTROLLERNAME: &str = "misccredit";

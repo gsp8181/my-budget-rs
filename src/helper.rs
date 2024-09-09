@@ -1,9 +1,10 @@
-use std::io::Result;
+use crate::{store::Result, structs::DBObjDBIntermediate};
+
 use rocket::serde::json::Json;
 
 use crate::structs::DBObj;
 
-pub fn re_json(result: Result<DBObj>) -> Result<Json<DBObj>>
+pub fn re_json(result: Result<DBObjDBIntermediate>) -> Result<Json<DBObjDBIntermediate>>
 {
     match result {
         Ok(d) => Ok(Json(d)),
