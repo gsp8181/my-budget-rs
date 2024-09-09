@@ -68,16 +68,16 @@ fn get_items_today(data: &[DBObj]) -> Vec<DBObj> {
         }
     }
 
-    data
-        .iter()
+    data.iter()
         .filter(|x| x.day.is_some())
         .filter(|x| dates.contains(&x.day.unwrap()))
-        .cloned().for_each(|mut x| {
-        if let Db_Name::debit = x.dbName {
-            x.amount = -x.amount
-        }
-        results.push(x)
-    });
+        .cloned()
+        .for_each(|mut x| {
+            if let Db_Name::debit = x.dbName {
+                x.amount = -x.amount
+            }
+            results.push(x)
+        });
 
     results
 }

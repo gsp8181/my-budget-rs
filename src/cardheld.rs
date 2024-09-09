@@ -13,7 +13,9 @@ use crate::structs::{Category, DBObjDBIntermediate, DBObjIn, Db_Name};
 
 #[get("/")]
 async fn get(db: Db) -> Json<Vec<DBObjDBIntermediate>> {
-    let result: Vec<DBObjDBIntermediate> = print_all_values(db, DB_NAME, CATEGORY, false).await.unwrap();
+    let result: Vec<DBObjDBIntermediate> = print_all_values(db, DB_NAME, CATEGORY, false)
+        .await
+        .unwrap();
 
     Json(result)
 }
@@ -22,22 +24,27 @@ async fn get(db: Db) -> Json<Vec<DBObjDBIntermediate>> {
 async fn get_by_id(db: Db, id: i32) -> Option<Json<DBObjDBIntermediate>> {
     let result = get_record_by_id(db, DB_NAME, CATEGORY, id).await;
 
-    match result {Ok(v)=>Some(Json(v)),
-    Err(e) => None, }
+    match result {
+        Ok(v) => Some(Json(v)),
+        Err(e) => None,
+    }
 }
 
 #[post("/", format = "json", data = "<obj>")]
 async fn post(db: Db, obj: Json<DBObjIn>) -> Json<DBObjDBIntermediate> {
     let result = insert_record(db, DB_NAME, CATEGORY, obj.0, get_attributes(ATTRIBUTES));
 
-    Json(result.await.unwrap())}
+    Json(result.await.unwrap())
+}
 
 #[put("/<id>", format = "json", data = "<obj>")]
 async fn put(db: Db, id: i32, obj: Json<DBObjIn>) -> Result<Json<DBObjDBIntermediate>> {
     let result = modify_record_by_id(db, DB_NAME, CATEGORY, get_attributes(ATTRIBUTES), id, obj.0);
 
-    match result.await {Ok(v)=>Ok(Json(v)),
-        Err(e) => Err(e), }
+    match result.await {
+        Ok(v) => Ok(Json(v)),
+        Err(e) => Err(e),
+    }
 }
 
 #[delete("/<id>")]
@@ -47,7 +54,10 @@ async fn delete(db: Db, id: i32) -> Result<Option<()>> {
 
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite(CONTROLLERNAME, |rocket| async {
-        rocket.mount(format!("/api/{}", CONTROLLERNAME), routes![get, get_by_id, post, put, delete])
+        rocket.mount(
+            format!("/api/{}", CONTROLLERNAME),
+            routes![get, get_by_id, post, put, delete],
+        )
     })
 }
 

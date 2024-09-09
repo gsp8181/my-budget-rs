@@ -1,11 +1,16 @@
-use std::fmt;
-use rocket_sync_db_pools::diesel;
-use serde::{Deserialize, Serialize};
 use diesel::{
-    deserialize::FromSql, prelude::AsChangeset, serialize::{Output, ToSql}, sql_types::Text, sqlite::{Sqlite, SqliteValue}, AsExpression, FromSqlRow, Identifiable, Insertable, Queryable
+    deserialize::FromSql,
+    prelude::AsChangeset,
+    serialize::{Output, ToSql},
+    sql_types::Text,
+    sqlite::{Sqlite, SqliteValue},
+    AsExpression, FromSqlRow, Identifiable, Insertable, Queryable,
 };
+use rocket_sync_db_pools::diesel;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Serialize)]
 pub(crate) struct PublicItem {
@@ -38,10 +43,13 @@ pub struct DBObj {
 }
 
 #[allow(non_snake_case)]
-#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, Identifiable, AsChangeset)]
+#[derive(
+    Debug, Clone, Deserialize, Serialize, Queryable, Insertable, Identifiable, AsChangeset,
+)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = item)]
-pub struct DBObjDBIntermediate { //TODO: fix me
+pub struct DBObjDBIntermediate {
+    //TODO: fix me
     //todo: db credit or debit
     pub id: Option<i32>,
     pub oldId: Option<i32>,
@@ -69,7 +77,6 @@ diesel::table! {
         dbName -> Text
     }
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[allow(non_snake_case)]
@@ -100,7 +107,6 @@ pub enum Db_Name {
     debit,
     credit,
 }
-
 
 impl FromSql<Text, Sqlite> for Category {
     fn from_sql(bytes: SqliteValue) -> diesel::deserialize::Result<Self> {

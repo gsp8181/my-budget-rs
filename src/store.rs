@@ -22,12 +22,7 @@ lazy_static! {
 }
 
 pub async fn get_collection(db: Db) -> Vec<DBObjDBIntermediate> {
-    let ids: Vec<DBObjDBIntermediate> = db
-    .run(move |conn| {
-        item::table
-            .load(conn)
-    })
-    .await.unwrap();
+    let ids: Vec<DBObjDBIntermediate> = db.run(move |conn| item::table.load(conn)).await.unwrap();
 
     ids
 }
@@ -99,7 +94,8 @@ pub async fn insert_record(
         oldId: None,
         category: category,
         name: new_db_obj.name.unwrap(),
-        day: match new_db_obj.day{ //TODO: handle this with an impl or fromtype
+        day: match new_db_obj.day {
+            //TODO: handle this with an impl or fromtype
             Some(x) => Some(x.parse::<i32>().unwrap()),
             None => None,
         },
@@ -154,7 +150,7 @@ pub async fn modify_record_by_id(
         dbitem.amount = d.to_string()
     }
 
-    dbitem.day = match new_db_obj.day{
+    dbitem.day = match new_db_obj.day {
         Some(x) => Some(x.parse::<i32>().unwrap()),
         None => None,
     };
