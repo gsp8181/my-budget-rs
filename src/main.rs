@@ -25,10 +25,6 @@ use crate::controllers::uncleared;
 mod tests;
 
 use rocket::fs::{relative, FileServer};
-use rocket::http::uri::Absolute;
-
-// In a real application, these would be retrieved dynamically from a config.
-const HOST: Absolute<'static> = uri!("http://localhost:5540");
 
 use rocket_sync_db_pools::{database, diesel};
 

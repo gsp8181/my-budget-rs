@@ -1,18 +1,15 @@
 use rocket::fairing::AdHoc;
 use rocket::response::status::Created;
 use rocket::{Build, Rocket};
-use serde_json::{json, Value};
 
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};
 
-use crate::structs::{item, Category, DBObj, DBObjDBIntermediate, DBObjIn, Db_Name};
+use crate::structs::{item, Category, DBObjDBIntermediate, DBObjIn, Db_Name};
 use crate::Db;
 
 use lazy_static::lazy_static;
 
-use std::fs::File;
-use std::io::Read;
 use std::sync::Mutex;
 
 pub type Result<T, E = rocket::response::Debug<diesel::result::Error>> = std::result::Result<T, E>;
