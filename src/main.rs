@@ -3,20 +3,23 @@ extern crate rocket;
 #[macro_use]
 extern crate rocket_sync_db_pools;
 mod api;
-mod bank;
-mod cardbalance;
-mod cardheld;
-mod cash;
-mod debt;
-mod debtto;
-pub mod helper;
-mod misccredit;
-mod miscdebit;
-mod regularcredit;
-mod regularpayment;
+mod helper;
 mod store;
 mod structs;
-mod uncleared;
+
+mod controllers;
+
+use crate::controllers::bank;
+use crate::controllers::cardbalance;
+use crate::controllers::cardheld;
+use crate::controllers::cash;
+use crate::controllers::debt;
+use crate::controllers::debtto;
+use crate::controllers::misccredit;
+use crate::controllers::miscdebit;
+use crate::controllers::regularcredit;
+use crate::controllers::regularpayment;
+use crate::controllers::uncleared;
 
 #[cfg(test)]
 mod tests;
