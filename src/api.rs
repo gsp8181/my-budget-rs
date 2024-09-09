@@ -31,7 +31,7 @@ fn test_data() -> PublicItem {
 
 fn get_items_today(data: &[DBObj]) -> Vec<DBObj> {
     let today1 = DBObj {
-        id: 59,
+        id: Some(59),
         oldId: None,
         category: Category::recurring,
         name: String::from("Applecare"),

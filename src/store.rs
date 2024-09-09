@@ -1,11 +1,21 @@
+use rocket::fairing::AdHoc;
+use rocket::response::status::Created;
+use rocket::{Build, Rocket};
 use serde_json::{json, Value};
 
-use crate::structs::{Category, DBObj, DBObjIn, Db_Name};
+use diesel::prelude::*;
+use diesel::{ExpressionMethods, RunQueryDsl};
+
+use crate::structs::{item, Category, DBObj, DBObjDBIntermediate, DBObjIn, Db_Name};
+use crate::Db;
+
 use lazy_static::lazy_static;
 
 use std::fs::File;
 use std::io::Read;
 use std::sync::Mutex;
+
+pub type Result<T, E = rocket::response::Debug<diesel::result::Error>> = std::result::Result<T, E>;
 
 lazy_static! {
     static ref my_mutex: Mutex<i32> = Mutex::new(0i32);
@@ -21,145 +31,183 @@ pub fn get_collection() -> Vec<DBObj> {
     result
 }
 
-pub fn print_all_values(db_name: Db_Name, category: Category, sort_by_day: bool) -> Vec<DBObj> {
-    let coll = get_collection();
-    let mut v: Vec<DBObj> = Vec::new();
-
-    for bank_obj in &coll {
-        if bank_obj.category.clone() as u32 == category.clone() as u32
-            && bank_obj.dbName.clone() as u32 == db_name.clone() as u32
-        //TODO: horrifying
-        {
-            v.push(DBObj::from(bank_obj.clone()))
-        }
-    }
-
+pub async fn print_all_values(
+    db: Db,
+    db_name: Db_Name,
+    category: Category,
+    sort_by_day: bool,
+) -> Result<Vec<DBObjDBIntermediate>> {
     if sort_by_day {
-        v.sort_by_key(|f| f.day)
-    }
+        let ids: Vec<DBObjDBIntermediate> = db
+            .run(move |conn| {
+                item::table
+                    .filter(item::category.eq(category))
+                    .filter(item::dbName.eq(db_name))
+                    .order(item::day.asc())
+                    .load(conn)
+            })
+            .await?;
 
-    v
+        Ok(ids)
+    } else {
+        let ids: Vec<DBObjDBIntermediate> = db
+            .run(move |conn| {
+                item::table
+                    .filter(item::category.eq(category))
+                    .filter(item::dbName.eq(db_name))
+                    .load(conn)
+            })
+            .await?;
+
+        Ok(ids)
+    }
 }
 
-pub fn get_record_by_id(db_name: Db_Name, category: Category, id: u32) -> Option<DBObj> {
-    let table = print_all_values(db_name, category, false);
+pub async fn get_record_by_id(
+    db: Db,
+    db_name: Db_Name,
+    category: Category,
+    id: i32,
+) -> Result<DBObjDBIntermediate> {
+    let ids: DBObjDBIntermediate = db
+        .run(move |conn| {
+            item::table
+                .filter(item::category.eq(category))
+                .filter(item::dbName.eq(db_name))
+                .filter(item::id.eq(id))
+                .first(conn)
+        })
+        .await?;
 
-    for bank_obj in &table {
-        if bank_obj.id == id {
-            return Some(bank_obj.clone());
-        }
-    }
-    None
+    Ok(ids)
 }
 
-pub fn insert_record(
+pub async fn insert_record(
+    db: Db,
     db_name: Db_Name,
     category: Category,
     new_db_obj: DBObjIn,
     attributes: Vec<&str>,
-) -> DBObj {
-    let mut db = get_collection();
-    let max_rec = db.iter().max_by_key(|p| p.id); //TODO: id links like this are bad bc of linked records lol
-    let id = match max_rec {
-        Some(rec) => rec.id + 1,
-        None => 1,
-    };
-
+) -> Result<DBObjDBIntermediate> {
+    //TODO: std::io::Result<Created<DBObj>>
     //TODO: verify attributes
 
-    let new_obj = DBObj {
+    let mut new_obj = DBObjDBIntermediate {
+        id: None,
         dbName: db_name,
-        id: id,
         oldId: None,
         category: category,
         name: new_db_obj.name.unwrap(),
         day: new_db_obj.day,
-        amount: new_db_obj.amount.unwrap(),
+        amount: new_db_obj.amount.unwrap().to_string(),
         cardid: new_db_obj.cardid,
     };
 
-    let rtn_obj = new_obj.clone();
+    let post_value = new_obj.clone();
+    let id: Option<i32> = db
+        .run(move |conn| {
+            diesel::insert_into(item::table)
+                .values(&post_value)
+                .returning(item::id)
+                .get_result(conn)
+        })
+        .await?;
 
-    db.push(new_obj);
+    new_obj.id = id;
 
-    let result = write(&db); //todo: parse error
-
-    rtn_obj
+    //new_obj = Some(id.expect("returning guarantees id present"));
+    Ok(new_obj) //Ok(Created::new("").body(new_obj))
 }
 
-pub fn modify_record_by_id(
+pub async fn modify_record_by_id(
+    db: Db,
     db_name: Db_Name,
     category: Category,
     attributes: Vec<&str>,
-    id: u32,
+    id: i32,
     new_db_obj: DBObjIn,
-) -> std::io::Result<DBObj> {
-    let mut db = get_collection();
-    let index = db.iter().position(|p| p.id == id); //TODO: verify same db
-    let id = match index {
-        Some(rec) => rec,
-        None => {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "could not delete",
-            ))
-        } //TODO: needs work,
-    };
+) -> Result<DBObjDBIntermediate> {
+    let category2 = category.clone();
+    let dbname2 = db_name.clone();
 
-    let mut item = db[id].clone();
-    //TODO: verify attributes
+    let ids: DBObjDBIntermediate = db
+        .run(move |conn| {
+            item::table
+                .filter(item::category.eq(category))
+                .filter(item::dbName.eq(db_name))
+                .filter(item::id.eq(id))
+                .first(conn)
+        })
+        .await?;
+
+    let mut dbitem = ids.clone();
 
     if let Some(d) = new_db_obj.name {
-        item.name = d
+        dbitem.name = d
     }
 
     if let Some(d) = new_db_obj.amount {
-        item.amount = d
+        dbitem.amount = d.to_string()
     }
 
-    item.day = new_db_obj.day;
-    item.cardid = new_db_obj.cardid;
+    dbitem.day = new_db_obj.day;
+    dbitem.cardid = new_db_obj.cardid;
 
-    let result_obj = item.clone();
+    let affected = db
+        .run(move |conn| {
+            diesel::update(item::table)
+                .filter(item::category.eq(category2))
+                .filter(item::dbName.eq(dbname2))
+                .filter(item::id.eq(id))
+                .set(dbitem)
+                .returning(item::all_columns)
+                .get_result(conn)
+        })
+        .await?;
 
-    let _ = std::mem::replace(&mut db[id], item);
-
-    let result = write(&db); //todo: parse error
-
-    Ok(result_obj)
+    Ok(affected)
 }
 
-pub fn delete_record_by_id(
+pub async fn delete_record_by_id(
+    db: Db,
     db_name: Db_Name,
     category: Category,
-    id: u32,
-) -> std::io::Result<Value> //TODO: make all result
-{
-    let mut db = get_collection();
-    let index = db.iter().position(|p| p.id == id); //TODO: verify same db
-    let id = match index {
-        Some(rec) => rec,
-        None => {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "could not delete",
-            ))
-        } //TODO: needs work,
-    };
+    id: i32,
+) -> Result<Option<()>> {
+    let affected = db
+        .run(move |conn| {
+            diesel::delete(item::table)
+                .filter(item::id.eq(id))
+                .filter(item::dbName.eq(db_name))
+                .filter(item::category.eq(category))
+                .execute(conn)
+        })
+        .await?;
 
-    db.remove(id);
-
-    let result = write(&db); //todo: parse error
-
-    Ok(json!({ "status": "deleted" }))
+    Ok((affected == 1).then(|| ()))
 }
 
-fn write(vec: &Vec<DBObj>) -> std::io::Result<()> {
-    let mut _mutex_changer = my_mutex.lock().unwrap();
+async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
+    use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
-    let file = std::fs::File::create("store.json")?;
-    let mut writer = std::io::BufWriter::new(file);
-    serde_json::to_writer(&mut writer, &vec)?;
-    std::io::Write::flush(&mut writer)?;
-    Ok(())
+    const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
+
+    Db::get_one(&rocket)
+        .await
+        .expect("database connection")
+        .run(|conn| {
+            conn.run_pending_migrations(MIGRATIONS)
+                .expect("diesel migrations");
+        })
+        .await;
+
+    rocket
+}
+
+pub fn stage() -> AdHoc {
+    AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
+        rocket
+            .attach(Db::fairing())
+            .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations)) //TODO: migrations do not run
+    })
 }
