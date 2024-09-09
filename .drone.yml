@@ -7,3 +7,9 @@ steps:
   image: rust
   commands:
   - cargo build
+
+- name: test
+  image: rust
+  commands:
+  - cargo test
+  

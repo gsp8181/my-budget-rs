@@ -17,6 +17,9 @@ mod debt;
 mod cash;
 mod cardheld;
 
+#[cfg(test)]
+mod tests;
+
 use rocket::fs::{relative, FileServer};
 use rocket::http::uri::Absolute;
 
