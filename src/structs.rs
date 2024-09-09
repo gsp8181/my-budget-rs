@@ -75,7 +75,7 @@ diesel::table! {
 #[allow(non_snake_case)]
 pub struct DBObjIn {
     pub name: Option<String>,
-    pub day: Option<i32>,
+    pub day: Option<String>,
     pub amount: Option<Decimal>,
     pub cardid: Option<i32>,
 }

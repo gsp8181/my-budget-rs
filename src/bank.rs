@@ -1,8 +1,6 @@
 use rocket::fairing::AdHoc;
 use rocket::serde::json::Json;
 
-use serde_json::Value;
-
 use crate::store::Result;
 
 use crate::Db;
@@ -11,12 +9,9 @@ use crate::helper::get_attributes;
 use crate::store::{
     delete_record_by_id, get_record_by_id, insert_record, modify_record_by_id, print_all_values,
 };
-use crate::structs::{Category, DBObj, DBObjDBIntermediate, DBObjIn, Db_Name};
+use crate::structs::{Category, DBObjDBIntermediate, DBObjIn, Db_Name};
 
-const CATEGORY: Category = Category::bank;
-const DB_NAME: Db_Name = Db_Name::credit;
-const ATTRIBUTES: &str = "name,amount";
-
+//TODO: template below
 #[get("/")]
 async fn get(db: Db) -> Json<Vec<DBObjDBIntermediate>> {
     let result: Vec<DBObjDBIntermediate> = print_all_values(db, DB_NAME, CATEGORY, false).await.unwrap();
@@ -52,7 +47,13 @@ async fn delete(db: Db, id: i32) -> Result<Option<()>> {
 }
 
 pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("API Stage", |rocket| async {
-        rocket.mount("/api/bank", routes![get, get_by_id, post, put, delete])
+    AdHoc::on_ignite(CONTROLLERNAME, |rocket| async {
+        rocket.mount(format!("/api/{}", CONTROLLERNAME), routes![get, get_by_id, post, put, delete])
     })
 }
+
+
+const CATEGORY: Category = Category::bank;
+const DB_NAME: Db_Name = Db_Name::credit;
+const ATTRIBUTES: &str = "name,amount";//TODO:enum?
+const CONTROLLERNAME: &str = "bank";

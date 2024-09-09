@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use chrono::{DateTime, Datelike, Local, Months, NaiveDate, TimeZone};
+use chrono::{DateTime, Datelike, Local, Month, Months, NaiveDate, TimeZone};
 use rocket::fairing::AdHoc;
 use rocket::serde::json::Json;
 use rust_decimal::prelude::FromPrimitive;
@@ -8,6 +8,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
 use crate::store::get_collection;
+use crate::structs::item::day;
 use crate::structs::{
     Category, DBObj, Db_Name, PublicItem, DAILY_RATE, PAYDAY, TOTAL_PAY, WEEKDAY_SAVING,
 };
@@ -18,8 +19,8 @@ async fn test_data(db: Db) -> PublicItem {
     let data_from_db = get_collection(db).await;
     let mut results: Vec<DBObj> = Vec::new();
     for object in data_from_db {
-        let new_obj = DBObj{
-            id:object.id,
+        let new_obj = DBObj {
+            id: object.id,
             amount: match Decimal::from_str(object.amount.as_str()) {
                 Ok(am) => am,
                 Err(_) => dec!(0),
@@ -52,6 +53,31 @@ async fn test_data(db: Db) -> PublicItem {
 fn get_items_today(data: &[DBObj]) -> Vec<DBObj> {
     let mut results: Vec<DBObj> = Vec::new();
 
+    let now = Local::now();
+
+    let mut dates: Vec<i32> = vec![now.day() as i32];
+
+    if now.day() == 1 {
+        let month = now.month();
+        if month == 10 || month == 5 || month == 7 || month == 12 {
+            dates.push(31)
+        } else if month == 2 {
+            dates.push(31);
+            dates.push(30);
+            dates.push(29); //TODO: but not in a leap year
+        }
+    }
+
+    data
+        .iter()
+        .filter(|x| x.day.is_some())
+        .filter(|x| dates.contains(&x.day.unwrap()))
+        .cloned().for_each(|mut x| {
+        if let Db_Name::debit = x.dbName {
+            x.amount = -x.amount
+        }
+        results.push(x)
+    });
 
     results
 }
@@ -209,10 +235,19 @@ fn can_be_used_in_calculation(
     }
 
     let date_obj: DateTime<Local> = if get_days_from_month(now.year(), now.month())
-        >= (record.day.unwrap() as u32) //TODO: panics if -1?
+        >= (record.day.unwrap() as u32)
+    //TODO: panics if -1?
     //TODO: days in year month
     {
-        match Local.with_ymd_and_hms(now.year(), now.month(), (record.day.unwrap() as u32), 0, 0, 0) {//TODO: panics if -1?
+        match Local.with_ymd_and_hms(
+            now.year(),
+            now.month(),
+            (record.day.unwrap() as u32),
+            0,
+            0,
+            0,
+        ) {
+            //TODO: panics if -1?
             chrono::offset::LocalResult::Single(single) => single,
             _ => panic!("Time zone error"), //todo: 500
         }
@@ -223,7 +258,8 @@ fn can_be_used_in_calculation(
         }
     };
 
-    if after_payday && (record.day.unwrap() as u32) < next_payday.day() {//TODO: panics if -1?
+    if after_payday && (record.day.unwrap() as u32) < next_payday.day() {
+        //TODO: panics if -1?
         return true;
     }
 

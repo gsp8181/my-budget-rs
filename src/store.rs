@@ -99,7 +99,10 @@ pub async fn insert_record(
         oldId: None,
         category: category,
         name: new_db_obj.name.unwrap(),
-        day: new_db_obj.day,
+        day: match new_db_obj.day{ //TODO: handle this with an impl or fromtype
+            Some(x) => Some(x.parse::<i32>().unwrap()),
+            None => None,
+        },
         amount: new_db_obj.amount.unwrap().to_string(),
         cardid: new_db_obj.cardid,
     };
@@ -151,7 +154,10 @@ pub async fn modify_record_by_id(
         dbitem.amount = d.to_string()
     }
 
-    dbitem.day = new_db_obj.day;
+    dbitem.day = match new_db_obj.day{
+        Some(x) => Some(x.parse::<i32>().unwrap()),
+        None => None,
+    };
     dbitem.cardid = new_db_obj.cardid;
 
     let affected = db
@@ -209,6 +215,6 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
         rocket
             .attach(Db::fairing())
-            .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations)) //TODO: migrations do not run
+            .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
     })
 }
