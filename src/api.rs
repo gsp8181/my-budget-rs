@@ -19,20 +19,7 @@ async fn test_data(db: Db) -> PublicItem {
     let data_from_db = get_collection(db).await;
     let mut results: Vec<JsonObject> = Vec::new();
     for object in data_from_db {
-        let new_obj = JsonObject {
-            id: object.id,
-            amount: match Decimal::from_str(object.amount.as_str()) {
-                Ok(am) => am,
-                Err(_) => dec!(0),
-            },
-            oldId: object.oldId,
-            category: object.category,
-            name: object.name,
-            day: object.day,
-            cardid: object.cardid,
-            dbName: object.dbName,
-        };
-        results.push(new_obj);
+        results.push(JsonObject::from(object));
     }
 
     return PublicItem {

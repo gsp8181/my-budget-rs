@@ -10,7 +10,7 @@ use rocket_sync_db_pools::diesel;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 #[derive(Debug, Serialize)]
 pub(crate) struct PublicItem {
@@ -153,6 +153,25 @@ impl TryFrom<&str> for Db_Name {
             "debit" => Ok(Db_Name::debit),
             "credit" => Ok(Db_Name::credit),
             _ => Err(format!("Unknown state: {}", value)),
+        }
+    }
+}
+
+impl From<DatabaseObject> for JsonObject {
+
+    fn from(object: DatabaseObject) -> JsonObject {
+        JsonObject {
+            id: object.id,
+            amount: match Decimal::from_str(object.amount.as_str()) {
+                Ok(am) => am,
+                Err(_) => dec!(0),
+            },
+            oldId: object.oldId,
+            category: object.category,
+            name: object.name,
+            day: object.day,
+            cardid: object.cardid,
+            dbName: object.dbName,
         }
     }
 }
