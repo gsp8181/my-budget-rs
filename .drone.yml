@@ -11,5 +11,5 @@ steps:
 - name: test
   image: rust
   commands:
-  - cargo test
+  - cargo test 2>/dev/null 
   
