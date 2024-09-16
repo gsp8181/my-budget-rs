@@ -149,7 +149,7 @@ fn sum_of_debits(data: &[JsonObject]) -> Decimal {
     amount
 }
 
-fn calculate(
+pub fn calculate(
     data: &Vec<JsonObject>,
     now: &DateTime<Local>,
     daily_rate: Decimal,
@@ -242,14 +242,7 @@ fn can_be_used_in_calculation(
     //TODO: panics if -1?
     //TODO: days in year month
     {
-        match Local.with_ymd_and_hms(
-            now.year(),
-            now.month(),
-            record.day.unwrap() as u32,
-            0,
-            0,
-            0,
-        ) {
+        match Local.with_ymd_and_hms(now.year(), now.month(), record.day.unwrap() as u32, 0, 0, 0) {
             //TODO: panics if -1?
             chrono::offset::LocalResult::Single(single) => single,
             _ => panic!("Time zone error"), //todo: 500
