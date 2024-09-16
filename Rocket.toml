@@ -2,5 +2,8 @@
 address = "192.168.1.4"
 port = 5540
 
+[release]
+address = "0.0.0.0"
+
 [default.databases.diesel]
-url = "database.sqlite"
+url = "storage/database.sqlite"
