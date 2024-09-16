@@ -10,9 +10,7 @@ use rust_decimal_macros::dec;
 use crate::services::itemstore::get_collection;
 use crate::services::settingsstore::get_setting;
 use crate::structs::item::day;
-use crate::structs::{
-    Category, JsonObject, Db_Name, PublicItem
-};
+use crate::structs::{Category, Db_Name, JsonObject, PublicItem};
 
 use crate::Db;
 
@@ -25,10 +23,17 @@ async fn test_data(db: Db) -> PublicItem {
 
     let now = Local::now();
 
-    let payday:u32 = u32::from_str(&get_setting(&db, String::from("payday"), String::from("25")).await).unwrap();;
-    let daily_rate:Decimal = Decimal::from_str(&get_setting(&db, String::from("dailyRate"), String::from("0")).await).unwrap();
-    let total_pay = Decimal::from_str(&get_setting(&db, String::from("pay"), String::from("0")).await).unwrap();;
-    let weekday_saving = Decimal::from_str(&get_setting(&db, String::from("weekdaySaving"), String::from("0")).await).unwrap();;
+    let payday: u32 =
+        u32::from_str(&get_setting(&db, String::from("payday"), String::from("25")).await).unwrap();
+    let daily_rate: Decimal =
+        Decimal::from_str(&get_setting(&db, String::from("dailyRate"), String::from("0")).await)
+            .unwrap();
+    let total_pay =
+        Decimal::from_str(&get_setting(&db, String::from("pay"), String::from("0")).await).unwrap();
+    let weekday_saving = Decimal::from_str(
+        &get_setting(&db, String::from("weekdaySaving"), String::from("0")).await,
+    )
+    .unwrap();
 
     return PublicItem {
         amount: calculate(&results, &now, daily_rate, payday, weekday_saving),
@@ -145,7 +150,13 @@ fn sum_of_debits(data: &[JsonObject]) -> Decimal {
     amount
 }
 
-fn calculate(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Decimal, payday: u32, weekday_saving: Decimal) -> Decimal {
+fn calculate(
+    data: &Vec<JsonObject>,
+    now: &DateTime<Local>,
+    daily_rate: Decimal,
+    payday: u32,
+    weekday_saving: Decimal,
+) -> Decimal {
     let mut amount = dec!(0.0);
 
     //TODO: split this off into can be used for calculation?
@@ -263,7 +274,13 @@ fn can_be_used_in_calculation(
     return false;
 }
 
-fn remaining_week(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Decimal, payday: u32, weekday_saving: Decimal) -> Decimal {
+fn remaining_week(
+    data: &Vec<JsonObject>,
+    now: &DateTime<Local>,
+    daily_rate: Decimal,
+    payday: u32,
+    weekday_saving: Decimal,
+) -> Decimal {
     // This calculates the total to sunday, so adding the daily rate back in and the weekend savings
     let mut amount = calculate(data, &now, daily_rate, payday, weekday_saving);
 
@@ -279,7 +296,13 @@ fn remaining_week(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Dec
     amount
 }
 
-fn end_of_week(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Decimal, payday: u32, weekday_saving: Decimal) -> Decimal {
+fn end_of_week(
+    data: &Vec<JsonObject>,
+    now: &DateTime<Local>,
+    daily_rate: Decimal,
+    payday: u32,
+    weekday_saving: Decimal,
+) -> Decimal {
     //If friday was today, this is what the total would be
     //Add back in the weekday savings and the fridays daily rate
     let mut amount = calculate(data, &now, daily_rate, payday, weekday_saving);
@@ -303,7 +326,13 @@ fn weekday(time: &DateTime<Local>) -> Decimal {
     }
 }
 
-fn full_weekend(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Decimal, payday: u32, weekday_saving: Decimal) -> Decimal {
+fn full_weekend(
+    data: &Vec<JsonObject>,
+    now: &DateTime<Local>,
+    daily_rate: Decimal,
+    payday: u32,
+    weekday_saving: Decimal,
+) -> Decimal {
     // I have no idea what this does
     // TODO: investigate
     // Takes off the difference between the daily rate and the weekday savings between now and the weekend?

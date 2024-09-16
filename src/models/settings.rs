@@ -13,9 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
 #[allow(non_snake_case)]
-#[derive(
-    Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset
-)]
+#[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset)]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = settings)]
 pub struct SettingDatabaseObject {
@@ -43,4 +41,3 @@ diesel::table! {
         value -> Text,
     }
 }
-

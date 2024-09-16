@@ -47,11 +47,13 @@ pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
         .await
         .unwrap();
 
-        match settingValue {
-            Some(value) => value,
-            None => {set_setting(&db, setting, default.clone()).await;
-                default.to_string()}
+    match settingValue {
+        Some(value) => value,
+        None => {
+            set_setting(&db, setting, default.clone()).await;
+            default.to_string()
         }
+    }
 }
 
 pub async fn set_setting(db: &Db, name: String, value: String) {
@@ -59,45 +61,51 @@ pub async fn set_setting(db: &Db, name: String, value: String) {
     let name2 = name.clone();
 
     let setting: Option<SettingDatabaseObject> = db
-        .run(move |conn| settings::table.filter(settings::name.eq(&name2)).first(conn).optional())
+        .run(move |conn| {
+            settings::table
+                .filter(settings::name.eq(&name2))
+                .first(conn)
+                .optional()
+        })
         .await
         .unwrap();
 
-        //TODO:test unique constant
-        match setting {
-            Some(object) => {
-        let setting = object.clone();
-        let newSetting = SettingDatabaseObject {
-            id: setting.id,
-            name: object.name.clone(),
-            value: value.to_string(),
-        };
-        let affected: SettingDatabaseObject = db
-            .run(move |conn| {
-                diesel::update(settings::table)
-                    .filter(settings::name.eq(object.name.clone()))
-                    .set(newSetting)
-                    .returning(settings::all_columns)
-                    .get_result(conn)
-            })
-            .await
-            .unwrap();
-    }, None => {
-        let new_obj = SettingDatabaseObject {
-            id: None,
-            name: name.clone(),
-            value: value.to_string(),
-        };
+    //TODO:test unique constant
+    match setting {
+        Some(object) => {
+            let setting = object.clone();
+            let newSetting = SettingDatabaseObject {
+                id: setting.id,
+                name: object.name.clone(),
+                value: value.to_string(),
+            };
+            let affected: SettingDatabaseObject = db
+                .run(move |conn| {
+                    diesel::update(settings::table)
+                        .filter(settings::name.eq(object.name.clone()))
+                        .set(newSetting)
+                        .returning(settings::all_columns)
+                        .get_result(conn)
+                })
+                .await
+                .unwrap();
+        }
+        None => {
+            let new_obj = SettingDatabaseObject {
+                id: None,
+                name: name.clone(),
+                value: value.to_string(),
+            };
 
-        let result: SettingDatabaseObject = db
-            .run(move |conn| {
-                diesel::insert_into(settings::table)
-                    .values(new_obj)
-                    .returning(settings::all_columns)
-                    .get_result(conn)
-                    .expect("Error saving new setting")
-            })
-            .await;
+            let result: SettingDatabaseObject = db
+                .run(move |conn| {
+                    diesel::insert_into(settings::table)
+                        .values(new_obj)
+                        .returning(settings::all_columns)
+                        .get_result(conn)
+                        .expect("Error saving new setting")
+                })
+                .await;
+        }
     }
-}
 }

@@ -158,7 +158,6 @@ impl TryFrom<&str> for Db_Name {
 }
 
 impl From<DatabaseObject> for JsonObject {
-
     fn from(object: DatabaseObject) -> JsonObject {
         JsonObject {
             id: object.id,

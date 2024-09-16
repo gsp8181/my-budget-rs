@@ -76,12 +76,15 @@ namespace BudgetPanel.Controllers
 
 use rocket::{fairing::AdHoc, serde::json::Json};
 
-use crate::{models::settings::{SettingDatabaseObject, SettingEntryObject}, services::settingsstore::{get_collection, get_setting, print_all_values, set_setting}, Db};
+use crate::{
+    models::settings::{SettingDatabaseObject, SettingEntryObject},
+    services::settingsstore::{get_collection, get_setting, print_all_values, set_setting},
+    Db,
+};
 
 #[get("/")]
 async fn get(db: Db) -> Json<Vec<SettingDatabaseObject>> {
-    let result: Vec<SettingDatabaseObject> = get_collection(&db)
-        .await;
+    let result: Vec<SettingDatabaseObject> = get_collection(&db).await;
 
     Json(result)
 }
@@ -97,15 +100,17 @@ async fn post(db: Db, obj: Json<SettingEntryObject>) {
     set_setting(&db, String::from("dailyRate"), obj.dailyRate.clone()).await;
     set_setting(&db, String::from("pay"), obj.pay.clone()).await;
     set_setting(&db, String::from("payday"), obj.payday.clone()).await;
-    set_setting(&db, String::from("weekdaySaving"), obj.weekdaySaving.clone()).await;
+    set_setting(
+        &db,
+        String::from("weekdaySaving"),
+        obj.weekdaySaving.clone(),
+    )
+    .await;
 }
 
- pub fn stage() -> AdHoc {
+pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Settings", |rocket| async {
-        rocket.mount(
-            format!("/api/settings"),
-            routes![get, get_by_id, post],
-        )
+        rocket.mount(format!("/api/settings"), routes![get, get_by_id, post])
     })
 }
 

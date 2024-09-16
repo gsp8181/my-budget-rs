@@ -7,8 +7,8 @@ mod helper;
 mod structs;
 
 mod controllers;
-mod services;
 mod models;
+mod services;
 
 #[cfg(test)]
 mod tests;
