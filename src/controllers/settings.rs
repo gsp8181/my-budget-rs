@@ -78,7 +78,7 @@ use rocket::{fairing::AdHoc, serde::json::Json};
 
 use crate::{
     models::settings::{SettingDatabaseObject, SettingEntryObject},
-    services::settingsstore::{get_collection, get_setting, print_all_values, set_setting},
+    services::settingsstore::{get_collection, get_setting, set_setting},
     Db,
 };
 

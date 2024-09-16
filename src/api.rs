@@ -1,13 +1,12 @@
 use std::str::FromStr;
 
-use chrono::{DateTime, Datelike, Local, Month, Months, NaiveDate, TimeZone};
+use chrono::{DateTime, Datelike, Local, Months, NaiveDate, TimeZone};
 use rocket::fairing::AdHoc;
 use rocket::serde::json::Json;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
-use crate::models::item::item::day;
 use crate::models::item::{Category, Db_Name, JsonObject, PublicItem};
 use crate::services::itemstore::get_collection;
 use crate::services::settingsstore::get_setting;
@@ -246,7 +245,7 @@ fn can_be_used_in_calculation(
         match Local.with_ymd_and_hms(
             now.year(),
             now.month(),
-            (record.day.unwrap() as u32),
+            record.day.unwrap() as u32,
             0,
             0,
             0,

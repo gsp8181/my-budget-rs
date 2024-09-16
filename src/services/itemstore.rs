@@ -1,6 +1,3 @@
-use rocket::fairing::AdHoc;
-use rocket::response::status::Created;
-use rocket::{Build, Rocket};
 
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};

@@ -2,7 +2,6 @@ use crate::{models::item::DatabaseObject, services::itemstore::Result};
 
 use rocket::serde::json::Json;
 
-use crate::models::item::JsonObject;
 
 pub fn re_json(result: Result<DatabaseObject>) -> Result<Json<DatabaseObject>> {
     match result {

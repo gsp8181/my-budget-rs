@@ -1,16 +1,8 @@
 use diesel::{
-    deserialize::FromSql,
-    prelude::AsChangeset,
-    serialize::{Output, ToSql},
-    sql_types::Text,
-    sqlite::{Sqlite, SqliteValue},
-    AsExpression, FromSqlRow, Identifiable, Insertable, Queryable,
+    prelude::AsChangeset, Identifiable, Insertable, Queryable,
 };
 use rocket_sync_db_pools::diesel;
-use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
-use std::{fmt, str::FromStr};
 
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset)]
