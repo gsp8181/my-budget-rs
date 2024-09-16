@@ -8,18 +8,7 @@ mod structs;
 
 mod controllers;
 mod services;
-
-use crate::controllers::bank;
-use crate::controllers::cardbalance;
-use crate::controllers::cardheld;
-use crate::controllers::cash;
-use crate::controllers::debt;
-use crate::controllers::debtto;
-use crate::controllers::misccredit;
-use crate::controllers::miscdebit;
-use crate::controllers::regularcredit;
-use crate::controllers::regularpayment;
-use crate::controllers::uncleared;
+mod models;
 
 #[cfg(test)]
 mod tests;

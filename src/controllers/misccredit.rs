@@ -14,7 +14,7 @@ use crate::structs::{Category, DatabaseObject, JsonEntryObject, Db_Name};
 //TODO: template below
 #[get("/")]
 async fn get(db: Db) -> Json<Vec<DatabaseObject>> {
-    let result: Vec<DatabaseObject> = print_all_values(db, DB_NAME, CATEGORY, false)
+    let result: Vec<DatabaseObject> = print_all_values(&db, DB_NAME, CATEGORY, false)
         .await
         .unwrap();
 
@@ -23,7 +23,7 @@ async fn get(db: Db) -> Json<Vec<DatabaseObject>> {
 
 #[get("/<id>")]
 async fn get_by_id(db: Db, id: i32) -> Option<Json<DatabaseObject>> {
-    let result = get_record_by_id(db, DB_NAME, CATEGORY, id).await;
+    let result = get_record_by_id(&db, DB_NAME, CATEGORY, id).await;
 
     match result {
         Ok(v) => Some(Json(v)),
@@ -33,14 +33,14 @@ async fn get_by_id(db: Db, id: i32) -> Option<Json<DatabaseObject>> {
 
 #[post("/", format = "json", data = "<obj>")]
 async fn post(db: Db, obj: Json<JsonEntryObject>) -> Json<DatabaseObject> {
-    let result = insert_record(db, DB_NAME, CATEGORY, obj.0, get_attributes(ATTRIBUTES));
+    let result = insert_record(&db, DB_NAME, CATEGORY, obj.0, get_attributes(ATTRIBUTES));
 
     Json(result.await.unwrap())
 }
 
 #[put("/<id>", format = "json", data = "<obj>")]
 async fn put(db: Db, id: i32, obj: Json<JsonEntryObject>) -> Result<Json<DatabaseObject>> {
-    let result = modify_record_by_id(db, DB_NAME, CATEGORY, get_attributes(ATTRIBUTES), id, obj.0);
+    let result = modify_record_by_id(&db, DB_NAME, CATEGORY, get_attributes(ATTRIBUTES), id, obj.0);
 
     match result.await {
         Ok(v) => Ok(Json(v)),
@@ -50,7 +50,7 @@ async fn put(db: Db, id: i32, obj: Json<JsonEntryObject>) -> Result<Json<Databas
 
 #[delete("/<id>")]
 async fn delete(db: Db, id: i32) -> Result<Option<()>> {
-    delete_record_by_id(db, DB_NAME, CATEGORY, id).await
+    delete_record_by_id(&db, DB_NAME, CATEGORY, id).await
 }
 
 pub fn stage() -> AdHoc {

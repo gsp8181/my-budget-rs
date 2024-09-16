@@ -18,14 +18,14 @@ lazy_static! {
     static ref my_mutex: Mutex<i32> = Mutex::new(0i32);
 }
 
-pub async fn get_collection(db: Db) -> Vec<DatabaseObject> {
+pub async fn get_collection(db: &Db) -> Vec<DatabaseObject> {
     let ids: Vec<DatabaseObject> = db.run(move |conn| item::table.load(conn)).await.unwrap();
 
     ids
 }
 
 pub async fn print_all_values(
-    db: Db,
+    db: &Db,
     db_name: Db_Name,
     category: Category,
     sort_by_day: bool,
@@ -57,7 +57,7 @@ pub async fn print_all_values(
 }
 
 pub async fn get_record_by_id(
-    db: Db,
+    db: &Db,
     db_name: Db_Name,
     category: Category,
     id: i32,
@@ -76,7 +76,7 @@ pub async fn get_record_by_id(
 }
 
 pub async fn insert_record(
-    db: Db,
+    db: &Db,
     db_name: Db_Name,
     category: Category,
     new_db_obj: JsonEntryObject,
@@ -117,7 +117,7 @@ pub async fn insert_record(
 }
 
 pub async fn modify_record_by_id(
-    db: Db,
+    db: &Db,
     db_name: Db_Name,
     category: Category,
     attributes: Vec<&str>,
@@ -169,7 +169,7 @@ pub async fn modify_record_by_id(
 }
 
 pub async fn delete_record_by_id(
-    db: Db,
+    db: &Db,
     db_name: Db_Name,
     category: Category,
     id: i32,

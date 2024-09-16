@@ -8,15 +8,16 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
 use crate::services::itemstore::get_collection;
+use crate::services::settingsstore::get_setting;
 use crate::structs::item::day;
 use crate::structs::{
-    Category, JsonObject, Db_Name, PublicItem, DAILY_RATE, PAYDAY, TOTAL_PAY, WEEKDAY_SAVING,
+    Category, JsonObject, Db_Name, PublicItem
 };
 
 use crate::Db;
 
 async fn test_data(db: Db) -> PublicItem {
-    let data_from_db = get_collection(db).await;
+    let data_from_db = get_collection(&db).await;
     let mut results: Vec<JsonObject> = Vec::new();
     for object in data_from_db {
         results.push(JsonObject::from(object));
@@ -24,17 +25,22 @@ async fn test_data(db: Db) -> PublicItem {
 
     let now = Local::now();
 
+    let payday:u32 = u32::from_str(&get_setting(&db, String::from("payday"), String::from("25")).await).unwrap();;
+    let daily_rate:Decimal = Decimal::from_str(&get_setting(&db, String::from("dailyRate"), String::from("0")).await).unwrap();
+    let total_pay = Decimal::from_str(&get_setting(&db, String::from("pay"), String::from("0")).await).unwrap();;
+    let weekday_saving = Decimal::from_str(&get_setting(&db, String::from("weekdaySaving"), String::from("0")).await).unwrap();;
+
     return PublicItem {
-        amount: calculate(&results, &now),
-        remaining_week: remaining_week(&results, &now),
-        end_of_week: end_of_week(&results, &now),
-        full_weekend: full_weekend(&results, &now),
+        amount: calculate(&results, &now, daily_rate, payday, weekday_saving),
+        remaining_week: remaining_week(&results, &now, daily_rate, payday, weekday_saving),
+        end_of_week: end_of_week(&results, &now, daily_rate, payday, weekday_saving),
+        full_weekend: full_weekend(&results, &now, daily_rate, payday, weekday_saving),
         monthly_debits: sum_of_debits(&results),
-        monthly_credits: sum_of_credits(&results),
+        monthly_credits: sum_of_credits(&results, total_pay),
         net_saved_this_month: dec!(-1),
         card_held_total: sum_of_card_held(&results),
-        net_saved_avg: net_saved_avg(&results),
-        saved_this_year: saved_this_year(&results),
+        net_saved_avg: net_saved_avg(&results, daily_rate, total_pay),
+        saved_this_year: saved_this_year(&results, daily_rate, total_pay),
         today: get_items_today(&results, &now),
     };
 }
@@ -69,21 +75,21 @@ fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonObject
     results
 }
 
-fn saved_this_year(data: &[JsonObject]) -> Decimal {
-    let total = (sum_of_credits(data) - sum_of_debits(data)) * dec!(12);
+fn saved_this_year(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -> Decimal {
+    let total = (sum_of_credits(data, total_pay) - sum_of_debits(data)) * dec!(12);
 
-    let daily_total = DAILY_RATE * dec!(365.25);
+    let daily_total = daily_rate * dec!(365.25);
 
     total - daily_total
     //var dailyTotal = dailyRate * (new DateTime(DateTime.Now.Year, 12, 31)).DayOfYear;
 }
 
-fn net_saved_avg(data: &[JsonObject]) -> Decimal {
+fn net_saved_avg(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -> Decimal {
     //TODO: not 31
 
-    let total = sum_of_credits(data) - sum_of_debits(data);
+    let total = sum_of_credits(data, total_pay) - sum_of_debits(data);
 
-    let daily_total = DAILY_RATE * dec!(31);
+    let daily_total = daily_rate * dec!(31);
 
     total - daily_total
 }
@@ -103,7 +109,7 @@ fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
     amount
 }
 
-fn sum_of_credits(data: &[JsonObject]) -> Decimal {
+fn sum_of_credits(data: &[JsonObject], total_pay: Decimal) -> Decimal {
     let mut amount = dec!(0);
     for bank_obj in data {
         if let JsonObject {
@@ -115,7 +121,7 @@ fn sum_of_credits(data: &[JsonObject]) -> Decimal {
             amount += bank_obj.amount;
         }
     }
-    amount + TOTAL_PAY
+    amount + total_pay
 }
 
 fn sum_of_debits(data: &[JsonObject]) -> Decimal {
@@ -139,16 +145,17 @@ fn sum_of_debits(data: &[JsonObject]) -> Decimal {
     amount
 }
 
-fn calculate(data: &Vec<JsonObject>, now: &DateTime<Local>) -> Decimal {
+fn calculate(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Decimal, payday: u32, weekday_saving: Decimal) -> Decimal {
     let mut amount = dec!(0.0);
 
     //TODO: split this off into can be used for calculation?
-    let mut next_payday = match Local.with_ymd_and_hms(now.year(), now.month(), PAYDAY, 0, 0, 0) {
+    //TODO: if 0 or out of range then this will fail
+    let mut next_payday = match Local.with_ymd_and_hms(now.year(), now.month(), payday, 0, 0, 0) {
         chrono::offset::LocalResult::Single(single) => single,
         _ => panic!("Time zone error"), //todo: 500
     };
 
-    let after_payday = now.day() >= PAYDAY;
+    let after_payday = now.day() >= payday;
 
     if after_payday {
         next_payday = next_payday + Months::new(1);
@@ -171,14 +178,14 @@ fn calculate(data: &Vec<JsonObject>, now: &DateTime<Local>) -> Decimal {
         None => panic!("Calc error"),
     };
 
-    let daily_rate_to_debit = days_to_calculate * DAILY_RATE;
+    let daily_rate_to_debit = days_to_calculate * daily_rate;
 
     amount -= daily_rate_to_debit;
 
     let weekday = weekday(&now);
 
     if weekday < dec!(5) {
-        amount -= WEEKDAY_SAVING * (weekday); //TODO: weekday
+        amount -= weekday_saving * (weekday); //TODO: weekday
     }
 
     for bank_obj in data {
@@ -256,32 +263,32 @@ fn can_be_used_in_calculation(
     return false;
 }
 
-fn remaining_week(data: &Vec<JsonObject>, now: &DateTime<Local>) -> Decimal {
+fn remaining_week(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Decimal, payday: u32, weekday_saving: Decimal) -> Decimal {
     // This calculates the total to sunday, so adding the daily rate back in and the weekend savings
-    let mut amount = calculate(data, &now);
+    let mut amount = calculate(data, &now, daily_rate, payday, weekday_saving);
 
     let weekday = weekday(&now);
 
     if weekday < dec!(5) {
-        let weekday_amount_to_debit = WEEKDAY_SAVING * (weekday);
+        let weekday_amount_to_debit = weekday_saving * (weekday);
         amount += weekday_amount_to_debit;
     }
 
-    amount += DAILY_RATE * (dec!(7) - weekday);
+    amount += daily_rate * (dec!(7) - weekday);
 
     amount
 }
 
-fn end_of_week(data: &Vec<JsonObject>, now: &DateTime<Local>) -> Decimal {
+fn end_of_week(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Decimal, payday: u32, weekday_saving: Decimal) -> Decimal {
     //If friday was today, this is what the total would be
     //Add back in the weekday savings and the fridays daily rate
-    let mut amount = calculate(data, &now);
+    let mut amount = calculate(data, &now, daily_rate, payday, weekday_saving);
 
     let weekday = weekday(&now);
 
     if weekday < dec!(5) {
-        let weekday_amount_to_debit = WEEKDAY_SAVING * dec!(4);
-        amount += weekday_amount_to_debit + DAILY_RATE;
+        let weekday_amount_to_debit = weekday_saving * dec!(4);
+        amount += weekday_amount_to_debit + daily_rate;
     } else if weekday > dec!(5) {
         return dec!(0); //TODO: maybe a different way
     }
@@ -296,16 +303,16 @@ fn weekday(time: &DateTime<Local>) -> Decimal {
     }
 }
 
-fn full_weekend(data: &Vec<JsonObject>, now: &DateTime<Local>) -> Decimal {
+fn full_weekend(data: &Vec<JsonObject>, now: &DateTime<Local>, daily_rate: Decimal, payday: u32, weekday_saving: Decimal) -> Decimal {
     // I have no idea what this does
     // TODO: investigate
     // Takes off the difference between the daily rate and the weekday savings between now and the weekend?
-    let mut amount = remaining_week(data, &now);
+    let mut amount = remaining_week(data, &now, daily_rate, payday, weekday_saving);
 
     let weekday = weekday(&now);
 
     if weekday < dec!(5) {
-        amount -= (dec!(5) - weekday) * (DAILY_RATE - WEEKDAY_SAVING);
+        amount -= (dec!(5) - weekday) * (daily_rate - weekday_saving);
     }
 
     amount

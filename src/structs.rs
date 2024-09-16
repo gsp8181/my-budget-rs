@@ -206,8 +206,3 @@ impl TryFrom<&str> for Category {
         }
     }
 }
-
-pub const PAYDAY: u32 = 30;
-pub const WEEKDAY_SAVING: Decimal = dec!(25);
-pub const DAILY_RATE: Decimal = dec!(40);
-pub const TOTAL_PAY: Decimal = dec!(1000.00);

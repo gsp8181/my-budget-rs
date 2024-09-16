@@ -3,8 +3,8 @@ use rocket::{Build, Rocket};
 
 use crate::Db;
 
-
 pub mod itemstore;
+pub mod settingsstore;
 
 async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
