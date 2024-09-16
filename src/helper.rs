@@ -12,7 +12,5 @@ pub fn re_json(result: Result<DatabaseObject>) -> Result<Json<DatabaseObject>> {
 }
 
 pub fn get_attributes(attributes: &str) -> Vec<&str> {
-    let attributes_vec: Vec<_> = attributes.split(',').collect();
-
-    attributes_vec
+    attributes.split(',').collect::<Vec<_>>()
 }
