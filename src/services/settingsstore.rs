@@ -34,6 +34,7 @@ pub async fn print_all_values(db: &Db) -> Result<Vec<SettingDatabaseObject>> {
 }
 
 pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
+    //TODO: lazy fix of borrow check error
     let settingName = setting.clone().to_string();
 
     let settingValue: Option<String> = db
@@ -51,13 +52,13 @@ pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
         Some(value) => value,
         None => {
             set_setting(&db, setting, default.clone()).await;
-            default.to_string()
+            default
         }
     }
 }
 
 pub async fn set_setting(db: &Db, name: String, value: String) {
-    //TODO: this is because theres something weird going on with the compiler, borrow check errors despite cloning
+    //TODO: lazy fix of borrow check error
     let name2 = name.clone();
 
     let setting: Option<SettingDatabaseObject> = db
@@ -73,16 +74,15 @@ pub async fn set_setting(db: &Db, name: String, value: String) {
     //TODO:test unique constant
     match setting {
         Some(object) => {
-            let setting = object.clone();
             let newSetting = SettingDatabaseObject {
-                id: setting.id,
+                id: object.id,
                 name: object.name.clone(),
-                value: value.to_string(),
+                value: value,
             };
             let affected: SettingDatabaseObject = db
                 .run(move |conn| {
                     diesel::update(settings::table)
-                        .filter(settings::name.eq(object.name.clone()))
+                        .filter(settings::name.eq(object.name))
                         .set(newSetting)
                         .returning(settings::all_columns)
                         .get_result(conn)
@@ -93,8 +93,8 @@ pub async fn set_setting(db: &Db, name: String, value: String) {
         None => {
             let new_obj = SettingDatabaseObject {
                 id: None,
-                name: name.clone(),
-                value: value.to_string(),
+                name: name,
+                value: value,
             };
 
             let result: SettingDatabaseObject = db
