@@ -4,7 +4,6 @@ extern crate rocket;
 extern crate rocket_sync_db_pools;
 mod api;
 mod helper;
-mod structs;
 
 mod controllers;
 mod models;

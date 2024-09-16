@@ -1,8 +1,8 @@
-use crate::{services::itemstore::Result, structs::DatabaseObject};
+use crate::{models::item::DatabaseObject, services::itemstore::Result};
 
 use rocket::serde::json::Json;
 
-use crate::structs::JsonObject;
+use crate::models::item::JsonObject;
 
 pub fn re_json(result: Result<DatabaseObject>) -> Result<Json<DatabaseObject>> {
     match result {

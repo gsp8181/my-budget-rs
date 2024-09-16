@@ -5,7 +5,7 @@ use rocket::{Build, Rocket};
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};
 
-use crate::structs::{item, Category, DatabaseObject, Db_Name, JsonEntryObject};
+use crate::models::item::{item, Category, DatabaseObject, Db_Name, JsonEntryObject};
 use crate::Db;
 
 use lazy_static::lazy_static;

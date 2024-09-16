@@ -1,7 +1,7 @@
 use rocket::State;
 use serde_json::{json, Value};
 
-use crate::structs::{Category, DBObj, DBObjIn, Db_Name};
+use crate::models::item::{Category, DBObj, DBObjIn, Db_Name};
 use crate::Settings;
 
 use lazy_static::lazy_static;
