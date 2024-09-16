@@ -4,10 +4,10 @@ extern crate rocket;
 extern crate rocket_sync_db_pools;
 mod api;
 mod helper;
-mod store;
 mod structs;
 
 mod controllers;
+mod services;
 
 use crate::controllers::bank;
 use crate::controllers::cardbalance;
@@ -43,17 +43,7 @@ fn rocket() -> _ {
     rocket::build()
         //.mount("/", routes![index])
         .mount("/", FileServer::from(relative!("wwwroot")))
-        .attach(store::stage())
         .attach(api::stage())
-        .attach(bank::stage())
-        .attach(regularcredit::stage())
-        .attach(cardbalance::stage())
-        .attach(uncleared::stage())
-        .attach(regularpayment::stage())
-        .attach(miscdebit::stage())
-        .attach(misccredit::stage())
-        .attach(debtto::stage())
-        .attach(debt::stage())
-        .attach(cash::stage())
-        .attach(cardheld::stage())
+        .attach(controllers::stage())
+        .attach(services::stage())
 }

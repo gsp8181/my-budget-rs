@@ -1,12 +1,12 @@
 use rocket::fairing::AdHoc;
 use rocket::serde::json::Json;
 
-use crate::store::Result;
+use crate::services::itemstore::Result;
 
 use crate::Db;
 
 use crate::helper::get_attributes;
-use crate::store::{
+use crate::services::itemstore::{
     delete_record_by_id, get_record_by_id, insert_record, modify_record_by_id, print_all_values,
 };
 use crate::structs::{Category, DatabaseObject, JsonEntryObject, Db_Name};

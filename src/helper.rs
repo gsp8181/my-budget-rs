@@ -1,4 +1,4 @@
-use crate::{store::Result, structs::DatabaseObject};
+use crate::{services::itemstore::Result, structs::DatabaseObject};
 
 use rocket::serde::json::Json;
 
