@@ -36,54 +36,53 @@ pub async fn print_all_values(db: &Db) -> Result<Vec<SettingDatabaseObject>> {
 pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
     let settingName = setting.clone().to_string();
 
-    let ids: Vec<String> = db
+    let settingValue: Option<String> = db
         .run(move |conn| {
             settings::table
                 .filter(settings::name.eq(settingName))
                 .select(settings::value)
-                .load(conn)
+                .first(conn)
+                .optional()
         })
         .await
         .unwrap();
 
-    if ids.len() == 1 {
-        ids.first().unwrap().clone()
-    } else if ids.len() == 0 {
-        set_setting(&db, setting, default.clone());
-        default.to_string()
-    } else {
-        panic!("Found two settings entries for a single setting")
-    }
+        match settingValue {
+            Some(value) => value,
+            None => {set_setting(&db, setting, default.clone()).await;
+                default.to_string()}
+        }
 }
 
 pub async fn set_setting(db: &Db, name: String, value: String) {
     //TODO: this is because theres something weird going on with the compiler, borrow check errors despite cloning
     let name2 = name.clone();
 
-    let ids: Vec<SettingDatabaseObject> = db
-        .run(move |conn| settings::table.filter(settings::name.eq(&name2)).load(conn))
+    let setting: Option<SettingDatabaseObject> = db
+        .run(move |conn| settings::table.filter(settings::name.eq(&name2)).first(conn).optional())
         .await
         .unwrap();
 
         //TODO:test unique constant
-    if ids.len() == 1 {
-        let setting = ids.first().unwrap().clone();
+        match setting {
+            Some(object) => {
+        let setting = object.clone();
         let newSetting = SettingDatabaseObject {
             id: setting.id,
-            name: ids.first().unwrap().name.clone(),
+            name: object.name.clone(),
             value: value.to_string(),
         };
         let affected: SettingDatabaseObject = db
             .run(move |conn| {
                 diesel::update(settings::table)
-                    .filter(settings::name.eq(ids.first().unwrap().name.clone()))
+                    .filter(settings::name.eq(object.name.clone()))
                     .set(newSetting)
                     .returning(settings::all_columns)
                     .get_result(conn)
             })
             .await
             .unwrap();
-    } else if ids.len() == 0 {
+    }, None => {
         let new_obj = SettingDatabaseObject {
             id: None,
             name: name.clone(),
@@ -99,7 +98,6 @@ pub async fn set_setting(db: &Db, name: String, value: String) {
                     .expect("Error saving new setting")
             })
             .await;
-    } else {
-        panic!("Found two settings entries for a single setting")
     }
+}
 }
