@@ -10,16 +10,16 @@ use rust_decimal_macros::dec;
 use crate::store::get_collection;
 use crate::structs::item::day;
 use crate::structs::{
-    Category, DBObj, Db_Name, PublicItem, DAILY_RATE, PAYDAY, TOTAL_PAY, WEEKDAY_SAVING,
+    Category, JsonObject, Db_Name, PublicItem, DAILY_RATE, PAYDAY, TOTAL_PAY, WEEKDAY_SAVING,
 };
 
 use crate::Db;
 
 async fn test_data(db: Db) -> PublicItem {
     let data_from_db = get_collection(db).await;
-    let mut results: Vec<DBObj> = Vec::new();
+    let mut results: Vec<JsonObject> = Vec::new();
     for object in data_from_db {
-        let new_obj = DBObj {
+        let new_obj = JsonObject {
             id: object.id,
             amount: match Decimal::from_str(object.amount.as_str()) {
                 Ok(am) => am,
@@ -50,8 +50,8 @@ async fn test_data(db: Db) -> PublicItem {
     };
 }
 
-fn get_items_today(data: &[DBObj]) -> Vec<DBObj> {
-    let mut results: Vec<DBObj> = Vec::new();
+fn get_items_today(data: &[JsonObject]) -> Vec<JsonObject> {
+    let mut results: Vec<JsonObject> = Vec::new();
 
     let now = Local::now();
 
@@ -82,7 +82,7 @@ fn get_items_today(data: &[DBObj]) -> Vec<DBObj> {
     results
 }
 
-fn saved_this_year(data: &[DBObj]) -> Decimal {
+fn saved_this_year(data: &[JsonObject]) -> Decimal {
     let total = (sum_of_credits(data) - sum_of_debits(data)) * dec!(12);
 
     let daily_total = DAILY_RATE * dec!(365.25);
@@ -91,7 +91,7 @@ fn saved_this_year(data: &[DBObj]) -> Decimal {
     //var dailyTotal = dailyRate * (new DateTime(DateTime.Now.Year, 12, 31)).DayOfYear;
 }
 
-fn net_saved_avg(data: &[DBObj]) -> Decimal {
+fn net_saved_avg(data: &[JsonObject]) -> Decimal {
     //TODO: not 31
 
     let total = sum_of_credits(data) - sum_of_debits(data);
@@ -101,10 +101,10 @@ fn net_saved_avg(data: &[DBObj]) -> Decimal {
     total - daily_total
 }
 
-fn sum_of_card_held(data: &[DBObj]) -> Decimal {
+fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
     let mut amount = dec!(0);
     for bank_obj in data {
-        if let DBObj {
+        if let JsonObject {
             dbName: Db_Name::credit,
             category: Category::creditcard,
             ..
@@ -116,10 +116,10 @@ fn sum_of_card_held(data: &[DBObj]) -> Decimal {
     amount
 }
 
-fn sum_of_credits(data: &[DBObj]) -> Decimal {
+fn sum_of_credits(data: &[JsonObject]) -> Decimal {
     let mut amount = dec!(0);
     for bank_obj in data {
-        if let DBObj {
+        if let JsonObject {
             dbName: Db_Name::credit,
             day: Some(_),
             ..
@@ -131,15 +131,15 @@ fn sum_of_credits(data: &[DBObj]) -> Decimal {
     amount + TOTAL_PAY
 }
 
-fn sum_of_debits(data: &[DBObj]) -> Decimal {
+fn sum_of_debits(data: &[JsonObject]) -> Decimal {
     let mut amount = dec!(0);
     for bank_obj in data {
         match bank_obj {
-            DBObj {
+            JsonObject {
                 category: Category::creditcard,
                 ..
             } => (),
-            DBObj {
+            JsonObject {
                 dbName: Db_Name::debit,
                 day: Some(_),
                 ..
@@ -152,7 +152,7 @@ fn sum_of_debits(data: &[DBObj]) -> Decimal {
     amount
 }
 
-fn calculate(data: &Vec<DBObj>) -> Decimal {
+fn calculate(data: &Vec<JsonObject>) -> Decimal {
     let mut amount = dec!(0.0);
 
     let now = Local::now();
@@ -197,7 +197,7 @@ fn calculate(data: &Vec<DBObj>) -> Decimal {
 
     for bank_obj in data {
         match bank_obj {
-            DBObj {
+            JsonObject {
                 dbName: Db_Name::credit,
                 ..
             } => {
@@ -205,7 +205,7 @@ fn calculate(data: &Vec<DBObj>) -> Decimal {
                     amount += bank_obj.amount
                 }
             }
-            DBObj {
+            JsonObject {
                 dbName: Db_Name::debit,
                 ..
             } => {
@@ -219,7 +219,7 @@ fn calculate(data: &Vec<DBObj>) -> Decimal {
 }
 
 fn can_be_used_in_calculation(
-    record: &DBObj,
+    record: &JsonObject,
     now: &DateTime<Local>,
     next_payday: &DateTime<Local>,
     after_payday: bool,
@@ -270,7 +270,7 @@ fn can_be_used_in_calculation(
     return false;
 }
 
-fn remaining_week(data: &Vec<DBObj>) -> Decimal {
+fn remaining_week(data: &Vec<JsonObject>) -> Decimal {
     // This calculates the total to sunday, so adding the daily rate back in and the weekend savings
     let mut amount = calculate(data);
 
@@ -286,7 +286,7 @@ fn remaining_week(data: &Vec<DBObj>) -> Decimal {
     amount
 }
 
-fn end_of_week(data: &Vec<DBObj>) -> Decimal {
+fn end_of_week(data: &Vec<JsonObject>) -> Decimal {
     //If friday was today, this is what the total would be
     //Add back in the weekday savings and the fridays daily rate
     let mut amount = calculate(data);
@@ -310,7 +310,7 @@ fn weekday(time: DateTime<Local>) -> Decimal {
     }
 }
 
-fn full_weekend(data: &Vec<DBObj>) -> Decimal {
+fn full_weekend(data: &Vec<JsonObject>) -> Decimal {
     // I have no idea what this does
     // TODO: investigate
     // Takes off the difference between the daily rate and the weekday savings between now and the weekend?

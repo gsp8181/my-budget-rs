@@ -5,7 +5,7 @@ use rocket::{Build, Rocket};
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};
 
-use crate::structs::{item, Category, DBObjDBIntermediate, DBObjIn, Db_Name};
+use crate::structs::{item, Category, DatabaseObject, JsonEntryObject, Db_Name};
 use crate::Db;
 
 use lazy_static::lazy_static;
@@ -18,8 +18,8 @@ lazy_static! {
     static ref my_mutex: Mutex<i32> = Mutex::new(0i32);
 }
 
-pub async fn get_collection(db: Db) -> Vec<DBObjDBIntermediate> {
-    let ids: Vec<DBObjDBIntermediate> = db.run(move |conn| item::table.load(conn)).await.unwrap();
+pub async fn get_collection(db: Db) -> Vec<DatabaseObject> {
+    let ids: Vec<DatabaseObject> = db.run(move |conn| item::table.load(conn)).await.unwrap();
 
     ids
 }
@@ -29,9 +29,9 @@ pub async fn print_all_values(
     db_name: Db_Name,
     category: Category,
     sort_by_day: bool,
-) -> Result<Vec<DBObjDBIntermediate>> {
+) -> Result<Vec<DatabaseObject>> {
     if sort_by_day {
-        let ids: Vec<DBObjDBIntermediate> = db
+        let ids: Vec<DatabaseObject> = db
             .run(move |conn| {
                 item::table
                     .filter(item::category.eq(category))
@@ -43,7 +43,7 @@ pub async fn print_all_values(
 
         Ok(ids)
     } else {
-        let ids: Vec<DBObjDBIntermediate> = db
+        let ids: Vec<DatabaseObject> = db
             .run(move |conn| {
                 item::table
                     .filter(item::category.eq(category))
@@ -61,8 +61,8 @@ pub async fn get_record_by_id(
     db_name: Db_Name,
     category: Category,
     id: i32,
-) -> Result<DBObjDBIntermediate> {
-    let ids: DBObjDBIntermediate = db
+) -> Result<DatabaseObject> {
+    let ids: DatabaseObject = db
         .run(move |conn| {
             item::table
                 .filter(item::category.eq(category))
@@ -79,13 +79,13 @@ pub async fn insert_record(
     db: Db,
     db_name: Db_Name,
     category: Category,
-    new_db_obj: DBObjIn,
+    new_db_obj: JsonEntryObject,
     attributes: Vec<&str>,
-) -> Result<DBObjDBIntermediate> {
+) -> Result<DatabaseObject> {
     //TODO: std::io::Result<Created<DBObj>>
     //TODO: verify attributes
 
-    let mut new_obj = DBObjDBIntermediate {
+    let mut new_obj = DatabaseObject {
         id: None,
         dbName: db_name,
         oldId: None,
@@ -122,12 +122,12 @@ pub async fn modify_record_by_id(
     category: Category,
     attributes: Vec<&str>,
     id: i32,
-    new_db_obj: DBObjIn,
-) -> Result<DBObjDBIntermediate> {
+    new_db_obj: JsonEntryObject,
+) -> Result<DatabaseObject> {
     let category2 = category.clone();
     let dbname2 = db_name.clone();
 
-    let ids: DBObjDBIntermediate = db
+    let ids: DatabaseObject = db
         .run(move |conn| {
             item::table
                 .filter(item::category.eq(category))

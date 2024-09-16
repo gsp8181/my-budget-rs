@@ -1,10 +1,10 @@
-use crate::{store::Result, structs::DBObjDBIntermediate};
+use crate::{store::Result, structs::DatabaseObject};
 
 use rocket::serde::json::Json;
 
-use crate::structs::DBObj;
+use crate::structs::JsonObject;
 
-pub fn re_json(result: Result<DBObjDBIntermediate>) -> Result<Json<DBObjDBIntermediate>> {
+pub fn re_json(result: Result<DatabaseObject>) -> Result<Json<DatabaseObject>> {
     match result {
         Ok(d) => Ok(Json(d)),
         Err(e) => Err(e),

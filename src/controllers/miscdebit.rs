@@ -9,12 +9,12 @@ use crate::helper::get_attributes;
 use crate::store::{
     delete_record_by_id, get_record_by_id, insert_record, modify_record_by_id, print_all_values,
 };
-use crate::structs::{Category, DBObjDBIntermediate, DBObjIn, Db_Name};
+use crate::structs::{Category, DatabaseObject, JsonEntryObject, Db_Name};
 
 //TODO: template below
 #[get("/")]
-async fn get(db: Db) -> Json<Vec<DBObjDBIntermediate>> {
-    let result: Vec<DBObjDBIntermediate> = print_all_values(db, DB_NAME, CATEGORY, false)
+async fn get(db: Db) -> Json<Vec<DatabaseObject>> {
+    let result: Vec<DatabaseObject> = print_all_values(db, DB_NAME, CATEGORY, false)
         .await
         .unwrap();
 
@@ -22,7 +22,7 @@ async fn get(db: Db) -> Json<Vec<DBObjDBIntermediate>> {
 }
 
 #[get("/<id>")]
-async fn get_by_id(db: Db, id: i32) -> Option<Json<DBObjDBIntermediate>> {
+async fn get_by_id(db: Db, id: i32) -> Option<Json<DatabaseObject>> {
     let result = get_record_by_id(db, DB_NAME, CATEGORY, id).await;
 
     match result {
@@ -32,14 +32,14 @@ async fn get_by_id(db: Db, id: i32) -> Option<Json<DBObjDBIntermediate>> {
 }
 
 #[post("/", format = "json", data = "<obj>")]
-async fn post(db: Db, obj: Json<DBObjIn>) -> Json<DBObjDBIntermediate> {
+async fn post(db: Db, obj: Json<JsonEntryObject>) -> Json<DatabaseObject> {
     let result = insert_record(db, DB_NAME, CATEGORY, obj.0, get_attributes(ATTRIBUTES));
 
     Json(result.await.unwrap())
 }
 
 #[put("/<id>", format = "json", data = "<obj>")]
-async fn put(db: Db, id: i32, obj: Json<DBObjIn>) -> Result<Json<DBObjDBIntermediate>> {
+async fn put(db: Db, id: i32, obj: Json<JsonEntryObject>) -> Result<Json<DatabaseObject>> {
     let result = modify_record_by_id(db, DB_NAME, CATEGORY, get_attributes(ATTRIBUTES), id, obj.0);
 
     match result.await {

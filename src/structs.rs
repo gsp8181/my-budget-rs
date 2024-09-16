@@ -24,13 +24,13 @@ pub(crate) struct PublicItem {
     pub card_held_total: Decimal,
     pub net_saved_avg: Decimal,
     pub saved_this_year: Decimal,
-    pub today: Vec<DBObj>,
+    pub today: Vec<JsonObject>,
 }
 
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
-pub struct DBObj {
+pub struct JsonObject {
     //todo: db credit or debit
     pub id: Option<i32>,
     pub oldId: Option<i32>,
@@ -48,7 +48,7 @@ pub struct DBObj {
 )]
 #[serde(crate = "rocket::serde")]
 #[diesel(table_name = item)]
-pub struct DBObjDBIntermediate {
+pub struct DatabaseObject {
     //TODO: fix me
     //todo: db credit or debit
     pub id: Option<i32>,
@@ -80,7 +80,7 @@ diesel::table! {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[allow(non_snake_case)]
-pub struct DBObjIn {
+pub struct JsonEntryObject {
     pub name: Option<String>,
     pub day: Option<String>,
     pub amount: Option<Decimal>,
