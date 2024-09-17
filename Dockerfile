@@ -15,7 +15,8 @@ RUN cargo build --release
 COPY ./Rocket.toml .
 COPY ./wwwroot ./wwwroot
 
-RUN cp $(find target/* -type d -not -name 'release' -print -quit)/release/my-budget my-budget
+#RUN cp $(find target/* -type d -not -name 'release' -print -quit)/release/my-budget my-budget
+RUN cp target/release/my-budget my-budget
 
 # our final base
 FROM alpine
