@@ -29,15 +29,13 @@ pub async fn print_all_values(db: &Db) -> Result<Vec<SettingDatabaseObject>> {
     Ok(ids)
 }
 
-//TODO: &str
-pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
-    //TODO: lazy fix of borrow check error
-    let settingName = setting.clone().to_string();
+pub async fn get_setting(db: &Db, setting_name: String, default_value: String) -> String {
+    let setting_name_clone = setting_name.clone();
 
-    let settingValue: Option<String> = db
+    let setting_value: Option<String> = db
         .run(move |conn| {
             settings::table
-                .filter(settings::name.eq(settingName))
+                .filter(settings::name.eq(setting_name_clone))
                 .select(settings::value)
                 .first(conn)
                 .optional()
@@ -45,24 +43,23 @@ pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
         .await
         .unwrap();
 
-    match settingValue {
+    match setting_value {
         Some(value) => value,
         None => {
-            set_setting(db, setting, default.clone()).await;
-            default
+            set_setting(db, setting_name, default_value.clone()).await;
+            default_value
         }
     }
 }
 
 //TODO: &str
 pub async fn set_setting(db: &Db, name: String, value: String) {
-    //TODO: lazy fix of borrow check error
-    let name2 = name.clone();
+    let name_clone = name.clone();
 
     let setting: Option<SettingDatabaseObject> = db
         .run(move |conn| {
             settings::table
-                .filter(settings::name.eq(&name2))
+                .filter(settings::name.eq(name_clone))
                 .first(conn)
                 .optional()
         })
@@ -72,7 +69,7 @@ pub async fn set_setting(db: &Db, name: String, value: String) {
     //TODO:test unique constant
     match setting {
         Some(object) => {
-            let newSetting = SettingDatabaseObject {
+            let new_setting = SettingDatabaseObject {
                 id: object.id,
                 name: object.name.clone(),
                 value,
@@ -81,7 +78,7 @@ pub async fn set_setting(db: &Db, name: String, value: String) {
                 .run(move |conn| {
                     diesel::update(settings::table)
                         .filter(settings::name.eq(object.name))
-                        .set(newSetting)
+                        .set(new_setting)
                         .returning(settings::all_columns)
                         .get_result(conn)
                 })

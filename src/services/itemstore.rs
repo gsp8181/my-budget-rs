@@ -1,4 +1,3 @@
-
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};
 
@@ -117,6 +116,8 @@ pub async fn modify_record_by_id(
     id: i32,
     new_db_obj: JsonEntryObject,
 ) -> Result<DatabaseObject> {
+    //TODO: verify attributes
+
     let category2 = category.clone();
     let dbname2 = db_name.clone();
 
