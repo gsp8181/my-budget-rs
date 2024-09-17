@@ -17,7 +17,8 @@ COPY ./wwwroot ./wwwroot
 
 RUN ls -alh target/
 RUN ls -alh target/release
-RUN cp $(find target/* -type d -not -name 'release' -print -quit)/release/my-budget my-budget
+#RUN cp $(find target/* -type d -not -name 'release' -print -quit)/release/my-budget my-budget
+RUN cp $(for i in $(ls -d target/*/); do echo ${i%%/}; done | grep linux)/release/my-budget my-budget
 #RUN cp target/release/my-budget my-budget
 
 # our final base
