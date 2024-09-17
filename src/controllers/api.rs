@@ -50,7 +50,7 @@ pub async fn test_data(db: Db) -> PublicItem {
         panic!("failed to read calc_to_eom setting")
     };
 
-    return PublicItem {
+    PublicItem {
         amount: calculate(
             &results,
             &now,
@@ -90,7 +90,7 @@ pub async fn test_data(db: Db) -> PublicItem {
         net_saved_avg: net_saved_avg(&results, daily_rate, total_pay),
         saved_this_year: saved_this_year(&results, daily_rate, total_pay),
         today: get_items_today(&results, &now),
-    };
+    }
 }
 
 #[get("/")]

@@ -4,9 +4,9 @@ macro_rules! generate_controller {
         use rocket::fairing::AdHoc;
         use rocket::serde::json::Json;
 
-        use crate::services::itemstore::Result;
+        use $crate::services::itemstore::Result;
 
-        use crate::Db;
+        use $crate::Db;
 
         use crate::helper::get_attributes;
         use crate::models::item::{Category, DatabaseObject, Db_Name, JsonEntryObject};

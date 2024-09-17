@@ -48,7 +48,7 @@ pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
     match settingValue {
         Some(value) => value,
         None => {
-            set_setting(&db, setting, default.clone()).await;
+            set_setting(db, setting, default.clone()).await;
             default
         }
     }
@@ -75,7 +75,7 @@ pub async fn set_setting(db: &Db, name: String, value: String) {
             let newSetting = SettingDatabaseObject {
                 id: object.id,
                 name: object.name.clone(),
-                value: value,
+                value,
             };
             let affected: SettingDatabaseObject = db
                 .run(move |conn| {
@@ -91,8 +91,8 @@ pub async fn set_setting(db: &Db, name: String, value: String) {
         None => {
             let new_obj = SettingDatabaseObject {
                 id: None,
-                name: name,
-                value: value,
+                name,
+                value,
             };
 
             let result: SettingDatabaseObject = db

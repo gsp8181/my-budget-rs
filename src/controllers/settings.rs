@@ -34,7 +34,7 @@ async fn post(db: Db, obj: Json<SettingEntryObject>) {
 
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Settings", |rocket| async {
-        rocket.mount(format!("/api/settings"), routes![get, get_by_id, post])
+        rocket.mount("/api/settings".to_string(), routes![get, get_by_id, post])
     })
 }
 

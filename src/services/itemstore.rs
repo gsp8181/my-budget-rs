@@ -86,13 +86,9 @@ pub async fn insert_record(
         id: None,
         dbName: db_name,
         oldId: None,
-        category: category,
+        category,
         name: new_db_obj.name.unwrap(),
-        day: match new_db_obj.day {
-            //TODO: handle this with an impl or fromtype
-            Some(x) => Some(x.parse::<i32>().unwrap()),
-            None => None,
-        },
+        day: new_db_obj.day.map(|x| x.parse::<i32>().unwrap()),
         amount: new_db_obj.amount.unwrap().to_string(),
         cardid: new_db_obj.cardid,
     };
@@ -144,10 +140,7 @@ pub async fn modify_record_by_id(
         dbitem.amount = d.to_string()
     }
 
-    dbitem.day = match new_db_obj.day {
-        Some(x) => Some(x.parse::<i32>().unwrap()),
-        None => None,
-    };
+    dbitem.day = new_db_obj.day.map(|x| x.parse::<i32>().unwrap());
     dbitem.cardid = new_db_obj.cardid;
 
     let affected = db
@@ -181,5 +174,5 @@ pub async fn delete_record_by_id(
         })
         .await?;
 
-    Ok((affected == 1).then(|| ()))
+    Ok((affected == 1).then_some(()))
 }
