@@ -2,15 +2,11 @@
 extern crate rocket;
 #[macro_use]
 extern crate rocket_sync_db_pools;
-mod api;
 mod helper;
 
 mod controllers;
 mod models;
 mod services;
-
-#[cfg(test)]
-mod tests;
 
 use rocket::fs::{relative, FileServer};
 
@@ -31,6 +27,6 @@ fn rocket() -> _ {
     rocket::build()
         //.mount("/", routes![index])
         .mount("/", FileServer::from(relative!("wwwroot")))
-                .attach(controllers::stage())
+        .attach(controllers::stage())
         .attach(services::stage())
 }

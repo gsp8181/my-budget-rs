@@ -2,8 +2,8 @@ use chrono::{DateTime, FixedOffset, Local, NaiveDate, TimeZone, Utc};
 use rust_decimal_macros::dec;
 
 use crate::{
-    api,
     models::item::{Category, Db_Name, JsonObject},
+    services::apiservice,
 };
 
 pub fn test_data() -> Vec<JsonObject> {
@@ -336,8 +336,6 @@ pub fn test_data() -> Vec<JsonObject> {
 fn check_calculate_date_and_pay() {
     let dt = get_local_date("2024 Sep 1 22:13:15.000 +0100");
 
-    //1529.81
-
     // debit 1 40
     // debit 1 6
     // debit 4 9.99
@@ -350,13 +348,48 @@ fn check_calculate_date_and_pay() {
     // debit 28 5.99
     // debit 30 19.99
 
+    // aggregate +7.54
+
     assert_eq!(
         dec!(1616.33),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(0),
             25,
+            dec!(0)
+        )
+    );
+
+    assert_eq!(
+        dec!(1529.81),
+        apiservice::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+            dec!(0),
+            3,
+            dec!(0)
+        )
+    );
+
+    assert_eq!(
+        dec!(1613.33),
+        apiservice::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
+            dec!(0),
+            30,
+            dec!(0)
+        )
+    );
+
+    assert_eq!(
+        dec!(1547.34),
+        apiservice::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
+            dec!(0),
+            3,
             dec!(0)
         )
     );
@@ -370,7 +403,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(456.33),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(40),
@@ -381,7 +414,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(1036.33),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(20),
@@ -392,7 +425,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(1616.33),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(0),
@@ -403,7 +436,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(471.33),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
@@ -414,7 +447,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(456.33),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
@@ -425,7 +458,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(446.33),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
@@ -436,7 +469,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(486.33),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 3 22:13:15.000 +0100"),
             dec!(40),
@@ -447,7 +480,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(666.32),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
             dec!(40),
@@ -458,7 +491,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(666.32),
-        api::calculate(
+        apiservice::calculate(
             &test_data(),
             &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
             dec!(40),
@@ -466,8 +499,6 @@ fn check_calculate_dr_ws() {
             dec!(50)
         )
     );
-
-    //assert!(dec!(920.31) == api::calculate(&test_data(), &dt, dec!(40), 25, dec!(25)));
 }
 
 #[test]
