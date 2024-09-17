@@ -31,7 +31,6 @@ fn rocket() -> _ {
     rocket::build()
         //.mount("/", routes![index])
         .mount("/", FileServer::from(relative!("wwwroot")))
-        .attach(api::stage())
-        .attach(controllers::stage())
+                .attach(controllers::stage())
         .attach(services::stage())
 }

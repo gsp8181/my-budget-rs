@@ -1,5 +1,6 @@
 use rocket::fairing::AdHoc;
 
+pub mod api;
 pub mod bank;
 pub mod cardbalance;
 pub mod cardheld;
@@ -28,5 +29,6 @@ pub fn stage() -> AdHoc {
             .attach(cash::stage())
             .attach(cardheld::stage())
             .attach(settings::stage())
+            .attach(api::stage())
     })
 }

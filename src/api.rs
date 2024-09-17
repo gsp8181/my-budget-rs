@@ -1,55 +1,10 @@
-use std::str::FromStr;
-
 use chrono::{DateTime, Datelike, Local, Months, NaiveDate, TimeZone};
-use rocket::fairing::AdHoc;
-use rocket::serde::json::Json;
-use rust_decimal::prelude::FromPrimitive;
-use rust_decimal::Decimal;
+use rust_decimal::{prelude::FromPrimitive, Decimal};
 use rust_decimal_macros::dec;
 
-use crate::models::item::{Category, Db_Name, JsonObject, PublicItem};
-use crate::services::itemstore::get_collection;
-use crate::services::settingsstore::get_setting;
+use crate::models::item::{Category, Db_Name, JsonObject};
 
-use crate::Db;
-
-async fn test_data(db: Db) -> PublicItem {
-    let data_from_db = get_collection(&db).await;
-    let mut results: Vec<JsonObject> = Vec::new();
-    for object in data_from_db {
-        results.push(JsonObject::from(object));
-    }
-
-    let now = Local::now();
-
-    let payday: u32 =
-        u32::from_str(&get_setting(&db, String::from("payday"), String::from("25")).await).unwrap();
-    let daily_rate: Decimal =
-        Decimal::from_str(&get_setting(&db, String::from("dailyRate"), String::from("0")).await)
-            .unwrap();
-    let total_pay =
-        Decimal::from_str(&get_setting(&db, String::from("pay"), String::from("0")).await).unwrap();
-    let weekday_saving = Decimal::from_str(
-        &get_setting(&db, String::from("weekdaySaving"), String::from("0")).await,
-    )
-    .unwrap();
-
-    return PublicItem {
-        amount: calculate(&results, &now, daily_rate, payday, weekday_saving),
-        remaining_week: remaining_week(&results, &now, daily_rate, payday, weekday_saving),
-        end_of_week: end_of_week(&results, &now, daily_rate, payday, weekday_saving),
-        full_weekend: full_weekend(&results, &now, daily_rate, payday, weekday_saving),
-        monthly_debits: sum_of_debits(&results),
-        monthly_credits: sum_of_credits(&results, total_pay),
-        net_saved_this_month: dec!(-1),
-        card_held_total: sum_of_card_held(&results),
-        net_saved_avg: net_saved_avg(&results, daily_rate, total_pay),
-        saved_this_year: saved_this_year(&results, daily_rate, total_pay),
-        today: get_items_today(&results, &now),
-    };
-}
-
-fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonObject> {
+pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonObject> {
     let mut results: Vec<JsonObject> = Vec::new();
 
     let mut dates: Vec<i32> = vec![now.day() as i32];
@@ -79,7 +34,7 @@ fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonObject
     results
 }
 
-fn saved_this_year(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -> Decimal {
+pub fn saved_this_year(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -> Decimal {
     let total = (sum_of_credits(data, total_pay) - sum_of_debits(data)) * dec!(12);
 
     let daily_total = daily_rate * dec!(365.25);
@@ -88,7 +43,7 @@ fn saved_this_year(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal)
     //var dailyTotal = dailyRate * (new DateTime(DateTime.Now.Year, 12, 31)).DayOfYear;
 }
 
-fn net_saved_avg(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -> Decimal {
+pub fn net_saved_avg(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -> Decimal {
     //TODO: not 31
 
     let total = sum_of_credits(data, total_pay) - sum_of_debits(data);
@@ -98,7 +53,7 @@ fn net_saved_avg(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -
     total - daily_total
 }
 
-fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
+pub fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
     let mut amount = dec!(0);
     for bank_obj in data {
         if let JsonObject {
@@ -113,7 +68,7 @@ fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
     amount
 }
 
-fn sum_of_credits(data: &[JsonObject], total_pay: Decimal) -> Decimal {
+pub fn sum_of_credits(data: &[JsonObject], total_pay: Decimal) -> Decimal {
     let mut amount = dec!(0);
     for bank_obj in data {
         if let JsonObject {
@@ -128,7 +83,7 @@ fn sum_of_credits(data: &[JsonObject], total_pay: Decimal) -> Decimal {
     amount + total_pay
 }
 
-fn sum_of_debits(data: &[JsonObject]) -> Decimal {
+pub fn sum_of_debits(data: &[JsonObject]) -> Decimal {
     let mut amount = dec!(0);
     for bank_obj in data {
         match bank_obj {
@@ -221,7 +176,7 @@ pub fn calculate(
     amount
 }
 
-fn can_be_used_in_calculation(
+pub fn can_be_used_in_calculation(
     record: &JsonObject,
     now: &DateTime<Local>,
     next_payday: &DateTime<Local>,
@@ -266,7 +221,7 @@ fn can_be_used_in_calculation(
     return false;
 }
 
-fn remaining_week(
+pub fn remaining_week(
     data: &Vec<JsonObject>,
     now: &DateTime<Local>,
     daily_rate: Decimal,
@@ -288,7 +243,7 @@ fn remaining_week(
     amount
 }
 
-fn end_of_week(
+pub fn end_of_week(
     data: &Vec<JsonObject>,
     now: &DateTime<Local>,
     daily_rate: Decimal,
@@ -318,7 +273,7 @@ fn weekday(time: &DateTime<Local>) -> Decimal {
     }
 }
 
-fn full_weekend(
+pub fn full_weekend(
     data: &Vec<JsonObject>,
     now: &DateTime<Local>,
     daily_rate: Decimal,
@@ -337,19 +292,6 @@ fn full_weekend(
     }
 
     amount
-}
-
-#[get("/")]
-async fn index(db: Db) -> Json<PublicItem> {
-    let user1 = test_data(db);
-
-    Json(user1.await)
-}
-
-pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("API Stage", |rocket| async {
-        rocket.mount("/api", routes![index])
-    })
 }
 
 pub fn get_days_from_month(year: i32, month: u32) -> u32 {
