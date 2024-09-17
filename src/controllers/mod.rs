@@ -7,6 +7,7 @@ pub mod cardheld;
 pub mod cash;
 pub mod debt;
 pub mod debtto;
+pub mod generate_controller;
 pub mod misccredit;
 pub mod miscdebit;
 pub mod regularcredit;
