@@ -1,0 +1,8 @@
+  AuthType Basic
+  AuthName "Budget Panel - Authentication Required - admin"
+  AuthUserFile "/var/www/html/budgetpanel/.htpasswd"
+  Require valid-user
+
+  Order allow,deny
+  Allow from all
+
