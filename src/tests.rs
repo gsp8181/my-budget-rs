@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub fn test_data() -> Vec<JsonObject> {
-    let d1 = JsonObject {
+    let d1: JsonObject = JsonObject {
         id: Some(1),
         oldId: None,
         category: Category::bank,
@@ -67,7 +67,7 @@ pub fn test_data() -> Vec<JsonObject> {
         oldId: None,
         category: Category::recurring,
         name: String::from("r1"),
-        day: Some(29),
+        day: Some(22),
         amount: dec!(125.0),
         cardid: None,
         dbName: Db_Name::credit,
@@ -333,16 +333,175 @@ pub fn test_data() -> Vec<JsonObject> {
 }
 
 #[test]
-fn check_calculate() {
+fn check_calculate_date_and_pay() {
+    let dt = get_local_date("2024 Sep 1 22:13:15.000 +0100");
+
+    //1529.81
+
+    // debit 1 40
+    // debit 1 6
+    // debit 4 9.99
+    // debit 7 3.99
+    // debit 17 20.00
+    // debit 20 1
+    // credit 22 125
+    // debit 24 3.50
+    // debit 26 7.00
+    // debit 28 5.99
+    // debit 30 19.99
+
+    assert_eq!(
+        dec!(1616.33),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+            dec!(0),
+            25,
+            dec!(0)
+        )
+    );
+
+    //assert!(dec!(920.31) == api::calculate(&test_data(), &dt, dec!(40), 25, dec!(25)));
+}
+
+#[test]
+fn check_calculate_dr_ws() {
+    let dt = get_local_date("2024 Sep 1 22:13:15.000 +0100");
+
+    assert_eq!(
+        dec!(456.33),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+            dec!(40),
+            25,
+            dec!(40)
+        )
+    );
+
+    assert_eq!(
+        dec!(1036.33),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+            dec!(20),
+            25,
+            dec!(40)
+        )
+    );
+
+    assert_eq!(
+        dec!(1616.33),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+            dec!(0),
+            25,
+            dec!(40)
+        )
+    );
+
+    assert_eq!(
+        dec!(471.33),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+            dec!(40),
+            25,
+            dec!(25)
+        )
+    );
+
+    assert_eq!(
+        dec!(456.33),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+            dec!(40),
+            25,
+            dec!(40)
+        )
+    );
+
+    assert_eq!(
+        dec!(446.33),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+            dec!(40),
+            25,
+            dec!(50)
+        )
+    );
+
+    assert_eq!(
+        dec!(486.33),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 3 22:13:15.000 +0100"),
+            dec!(40),
+            25,
+            dec!(25)
+        )
+    );
+
+    assert_eq!(
+        dec!(666.32),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
+            dec!(40),
+            25,
+            dec!(25)
+        )
+    );
+
+    assert_eq!(
+        dec!(666.32),
+        api::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
+            dec!(40),
+            25,
+            dec!(50)
+        )
+    );
+
+    //assert!(dec!(920.31) == api::calculate(&test_data(), &dt, dec!(40), 25, dec!(25)));
+}
+
+#[test]
+fn check_static_totals() {
+    // static credits 3247.23
+    // static debits 1717.42
+    // static total 1529.81
+
+    let mut amount = dec!(0);
+    for data in test_data() {
+        match data {
+            JsonObject {
+                dbName: Db_Name::debit,
+                day: None,
+                ..
+            } => amount -= data.amount,
+            JsonObject {
+                dbName: Db_Name::credit,
+                day: None,
+                ..
+            } => amount += data.amount,
+            _ => {}
+        }
+    }
+    assert_eq!(dec!(1529.81), amount);
+}
+
+fn get_local_date(dt_str: &str) -> DateTime<Local> {
     let dt = Local
         .from_local_datetime(
-            &DateTime::parse_from_str("2024 Sep 16 22:13:15.000 +0100", "%Y %b %d %H:%M:%S%.3f %z")
+            &DateTime::parse_from_str(dt_str, "%Y %b %d %H:%M:%S%.3f %z")
                 .unwrap()
                 .naive_local(),
         )
         .unwrap();
-
-    todo!("check calculations - intentionally failing the build to test configuration");
-
-    assert!(dec!(920.31) == api::calculate(&test_data(), &dt, dec!(40), 25, dec!(25)));
+    dt
 }
