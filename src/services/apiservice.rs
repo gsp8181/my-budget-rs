@@ -13,10 +13,12 @@ pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonOb
         let month = now.month();
         if month == 10 || month == 5 || month == 7 || month == 12 {
             dates.push(31)
-        } else if month == 2 {
+        } else if month == 3 {
             dates.push(31);
             dates.push(30);
-            dates.push(29); //TODO: but not in a leap year
+            if get_days_from_month(now.year(), 2) < 29 {
+                dates.push(29);
+            }
         }
     }
 
@@ -323,6 +325,7 @@ pub fn get_days_from_month(year: i32, month: u32) -> u32 {
     .signed_duration_since(NaiveDate::from_ymd(year, month, 1))
     .num_days();
 
+    //TODO: make this have better error handling
     match i64::try_into(result) {
         Ok(u32) => u32,
         Err(e) => 28,
