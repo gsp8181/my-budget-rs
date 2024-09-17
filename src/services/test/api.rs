@@ -334,8 +334,6 @@ pub fn test_data() -> Vec<JsonObject> {
 
 #[test]
 fn check_calculate_date_and_pay() {
-    let dt = get_local_date("2024 Sep 1 22:13:15.000 +0100");
-
     // debit 1 40
     // debit 1 6
     // debit 4 9.99
@@ -357,7 +355,8 @@ fn check_calculate_date_and_pay() {
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(0),
             25,
-            dec!(0)
+            dec!(0),
+            true
         )
     );
 
@@ -368,7 +367,8 @@ fn check_calculate_date_and_pay() {
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(0),
             3,
-            dec!(0)
+            dec!(0),
+            true
         )
     );
 
@@ -379,7 +379,8 @@ fn check_calculate_date_and_pay() {
             &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
             dec!(0),
             30,
-            dec!(0)
+            dec!(0),
+            true
         )
     );
 
@@ -390,17 +391,15 @@ fn check_calculate_date_and_pay() {
             &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
             dec!(0),
             3,
-            dec!(0)
+            dec!(0),
+            true
         )
     );
-
     //assert!(dec!(920.31) == api::calculate(&test_data(), &dt, dec!(40), 25, dec!(25)));
 }
 
 #[test]
 fn check_calculate_dr_ws() {
-    let dt = get_local_date("2024 Sep 1 22:13:15.000 +0100");
-
     assert_eq!(
         dec!(456.33),
         apiservice::calculate(
@@ -408,7 +407,8 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(40),
             25,
-            dec!(40)
+            dec!(40),
+            true
         )
     );
 
@@ -419,7 +419,8 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(20),
             25,
-            dec!(40)
+            dec!(40),
+            true
         )
     );
 
@@ -430,7 +431,8 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(0),
             25,
-            dec!(40)
+            dec!(40),
+            true
         )
     );
 
@@ -441,7 +443,8 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
             25,
-            dec!(25)
+            dec!(25),
+            true
         )
     );
 
@@ -452,7 +455,8 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
             25,
-            dec!(40)
+            dec!(40),
+            true
         )
     );
 
@@ -463,7 +467,8 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
             25,
-            dec!(50)
+            dec!(50),
+            true
         )
     );
 
@@ -474,7 +479,8 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 3 22:13:15.000 +0100"),
             dec!(40),
             25,
-            dec!(25)
+            dec!(25),
+            true
         )
     );
 
@@ -485,7 +491,8 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
             dec!(40),
             25,
-            dec!(25)
+            dec!(25),
+            true
         )
     );
 
@@ -496,7 +503,80 @@ fn check_calculate_dr_ws() {
             &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
             dec!(40),
             25,
-            dec!(50)
+            dec!(50),
+            true
+        )
+    );
+}
+
+#[test]
+fn check_calculate_rollover_payday() {
+    let vect: Vec<JsonObject> = vec![];
+    assert_eq!(
+        dec!(-1200),
+        apiservice::calculate(
+            &vect,
+            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+            dec!(40),
+            1,
+            dec!(40),
+            false
+        )
+    );
+
+    assert_eq!(
+        dec!(-2400),
+        apiservice::calculate(
+            &vect,
+            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+            dec!(40),
+            1,
+            dec!(40),
+            true
+        )
+    );
+
+    //TODO: should this calculate the test data aswell? currently it does NOT
+    assert_eq!(
+        dec!(1547.34),
+        apiservice::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
+            dec!(0),
+            3,
+            dec!(0),
+            true
+        )
+    );
+
+    assert_eq!(
+        dec!(1547.34),
+        apiservice::calculate(
+            &test_data(),
+            &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
+            dec!(0),
+            3,
+            dec!(0),
+            false
+        )
+    );
+
+    //TODO:test with data
+}
+
+#[test]
+fn check_calculate_payday_oor() {
+    let vect: Vec<JsonObject> = vec![];
+
+    assert_eq!(
+        dec!(-1160),
+        apiservice::calculate(
+            &vect,
+            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+            dec!(40),
+            31,
+            dec!(40),
+            true
         )
     );
 }

@@ -25,23 +25,64 @@ pub async fn test_data(db: Db) -> PublicItem {
     //TODO: browsers time??
     let now = Local::now();
 
+    //TODO: tuple
     let payday: u32 =
-        u32::from_str(&get_setting(&db, String::from("payday"), String::from("25")).await).unwrap();
+        u32::from_str(&get_setting(&db, String::from("payday"), String::from("25")).await)
+            .expect("failed to read payday setting");
     let daily_rate: Decimal =
         Decimal::from_str(&get_setting(&db, String::from("dailyRate"), String::from("0")).await)
-            .unwrap();
+            .expect("failed to read dailyRate setting");
     let total_pay =
-        Decimal::from_str(&get_setting(&db, String::from("pay"), String::from("0")).await).unwrap();
+        Decimal::from_str(&get_setting(&db, String::from("pay"), String::from("0")).await)
+            .expect("failed to read pay setting");
     let weekday_saving = Decimal::from_str(
         &get_setting(&db, String::from("weekdaySaving"), String::from("0")).await,
     )
-    .unwrap();
+    .expect("failed to read weekdaySaving setting");
+
+    //TODO: add to settings client and wrapper
+    let calc_to_eom = &get_setting(&db, String::from("calc_to_eom"), String::from("true")).await;
+    let calc_to_eom = if calc_to_eom == &String::from("true") {
+        true
+    } else if calc_to_eom == &String::from("false") {
+        false
+    } else {
+        panic!("failed to read calc_to_eom setting")
+    };
 
     return PublicItem {
-        amount: calculate(&results, &now, daily_rate, payday, weekday_saving),
-        remaining_week: remaining_week(&results, &now, daily_rate, payday, weekday_saving),
-        end_of_week: end_of_week(&results, &now, daily_rate, payday, weekday_saving),
-        full_weekend: full_weekend(&results, &now, daily_rate, payday, weekday_saving),
+        amount: calculate(
+            &results,
+            &now,
+            daily_rate,
+            payday,
+            weekday_saving,
+            calc_to_eom,
+        ),
+        remaining_week: remaining_week(
+            &results,
+            &now,
+            daily_rate,
+            payday,
+            weekday_saving,
+            calc_to_eom,
+        ),
+        end_of_week: end_of_week(
+            &results,
+            &now,
+            daily_rate,
+            payday,
+            weekday_saving,
+            calc_to_eom,
+        ),
+        full_weekend: full_weekend(
+            &results,
+            &now,
+            daily_rate,
+            payday,
+            weekday_saving,
+            calc_to_eom,
+        ),
         monthly_debits: sum_of_debits(&results),
         monthly_credits: sum_of_credits(&results, total_pay),
         net_saved_this_month: dec!(-1),

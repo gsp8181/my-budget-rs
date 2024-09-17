@@ -110,11 +110,17 @@ pub fn calculate(
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
+    calc_to_eom: bool,
 ) -> Decimal {
     let mut amount = dec!(0.0);
 
+    let payday = if (payday <= get_days_from_month(now.year(), now.month())) {
+        payday
+    } else {
+        get_days_from_month(now.year(), now.month())
+    };
+
     //TODO: split this off into can be used for calculation?
-    //TODO: if 0 or out of range then this will fail
     let mut next_payday = match Local.with_ymd_and_hms(now.year(), now.month(), payday, 0, 0, 0) {
         chrono::offset::LocalResult::Single(single) => single,
         _ => panic!("Time zone error"), //todo: 500
@@ -125,10 +131,15 @@ pub fn calculate(
     if after_payday {
         next_payday = next_payday + Months::new(1);
     }
+
     let end_of_month_for_payday = match Local.with_ymd_and_hms(
         next_payday.year(),
         next_payday.month(),
-        get_days_from_month(next_payday.year(), next_payday.month()),
+        if calc_to_eom {
+            get_days_from_month(next_payday.year(), next_payday.month())
+        } else {
+            payday
+        },
         0,
         0,
         0,
@@ -227,9 +238,10 @@ pub fn remaining_week(
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
+    calc_to_eom: bool,
 ) -> Decimal {
     // This calculates the total to sunday, so adding the daily rate back in and the weekend savings
-    let mut amount = calculate(data, &now, daily_rate, payday, weekday_saving);
+    let mut amount = calculate(data, &now, daily_rate, payday, weekday_saving, calc_to_eom);
 
     let weekday = weekday(&now);
 
@@ -249,10 +261,11 @@ pub fn end_of_week(
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
+    calc_to_eom: bool,
 ) -> Decimal {
     //If friday was today, this is what the total would be
     //Add back in the weekday savings and the fridays daily rate
-    let mut amount = calculate(data, &now, daily_rate, payday, weekday_saving);
+    let mut amount = calculate(data, &now, daily_rate, payday, weekday_saving, calc_to_eom);
 
     let weekday = weekday(&now);
 
@@ -279,11 +292,12 @@ pub fn full_weekend(
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
+    calc_to_eom: bool,
 ) -> Decimal {
     // I have no idea what this does
     // TODO: investigate
     // Takes off the difference between the daily rate and the weekday savings between now and the weekend?
-    let mut amount = remaining_week(data, &now, daily_rate, payday, weekday_saving);
+    let mut amount = remaining_week(data, &now, daily_rate, payday, weekday_saving, calc_to_eom);
 
     let weekday = weekday(&now);
 

@@ -1,4 +1,3 @@
-
 use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};
 
@@ -30,6 +29,7 @@ pub async fn print_all_values(db: &Db) -> Result<Vec<SettingDatabaseObject>> {
     Ok(ids)
 }
 
+//TODO: &str
 pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
     //TODO: lazy fix of borrow check error
     let settingName = setting.clone().to_string();
@@ -54,6 +54,7 @@ pub async fn get_setting(db: &Db, setting: String, default: String) -> String {
     }
 }
 
+//TODO: &str
 pub async fn set_setting(db: &Db, name: String, value: String) {
     //TODO: lazy fix of borrow check error
     let name2 = name.clone();
