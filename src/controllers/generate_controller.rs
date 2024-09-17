@@ -2,10 +2,10 @@
 macro_rules! generate_controller {
     ($category:expr, $db_name:expr, $attributes:expr, $controllername:expr) => {
         use rocket::fairing::AdHoc;
+        use rocket::http::Status;
         use rocket::serde::json::Json;
 
         use $crate::services::itemstore::Result;
-
         use $crate::Db;
 
         use crate::helper::get_attributes;
@@ -16,53 +16,57 @@ macro_rules! generate_controller {
         };
 
         #[get("/")]
-        async fn get(db: Db) -> Json<Vec<DatabaseObject>> {
-            let result: Vec<DatabaseObject> = print_all_values(&db, $db_name, $category, false)
-                .await
-                .unwrap();
-
-            Json(result)
+        async fn get(db: Db) -> Result<Json<Vec<DatabaseObject>>, Status> {
+            match print_all_values(&db, $db_name, $category, false).await {
+                Ok(result) => Ok(Json(result)),
+                Err(_) => Err(Status::InternalServerError),
+            }
         }
 
         #[get("/<id>")]
-        async fn get_by_id(db: Db, id: i32) -> Option<Json<DatabaseObject>> {
-            let result = get_record_by_id(&db, $db_name, $category, id).await;
-
-            match result {
-                Ok(v) => Some(Json(v)),
-                //TODO: err handling
-                Err(_e) => None,
+        async fn get_by_id(db: Db, id: i32) -> Result<Json<DatabaseObject>, Status> {
+            match get_record_by_id(&db, $db_name, $category, id).await {
+                Ok(v) => Ok(Json(v)),
+                Err(_) => Err(Status::NotFound),
             }
         }
 
         #[post("/", format = "json", data = "<obj>")]
-        async fn post(db: Db, obj: Json<JsonEntryObject>) -> Json<DatabaseObject> {
-            let result =
-                insert_record(&db, $db_name, $category, obj.0, get_attributes($attributes));
-
-            Json(result.await.unwrap())
+        async fn post(db: Db, obj: Json<JsonEntryObject>) -> Result<Json<DatabaseObject>, Status> {
+            match insert_record(&db, $db_name, $category, obj.0, get_attributes($attributes)).await
+            {
+                Ok(result) => Ok(Json(result)),
+                Err(_) => Err(Status::InternalServerError),
+            }
         }
 
         #[put("/<id>", format = "json", data = "<obj>")]
-        async fn put(db: Db, id: i32, obj: Json<JsonEntryObject>) -> Result<Json<DatabaseObject>> {
-            let result = modify_record_by_id(
+        async fn put(
+            db: Db,
+            id: i32,
+            obj: Json<JsonEntryObject>,
+        ) -> Result<Json<DatabaseObject>, Status> {
+            match modify_record_by_id(
                 &db,
                 $db_name,
                 $category,
                 get_attributes($attributes),
                 id,
                 obj.0,
-            );
-
-            match result.await {
-                Ok(v) => Ok(Json(v)),
-                Err(e) => Err(e),
+            )
+            .await
+            {
+                Ok(result) => Ok(Json(result)),
+                Err(_) => Err(Status::InternalServerError),
             }
         }
 
         #[delete("/<id>")]
-        async fn delete(db: Db, id: i32) -> Result<Option<()>> {
-            delete_record_by_id(&db, $db_name, $category, id).await
+        async fn delete(db: Db, id: i32) -> Result<Status, Status> {
+            match delete_record_by_id(&db, $db_name, $category, id).await {
+                Ok(_) => Ok(Status::NoContent),
+                Err(_) => Err(Status::InternalServerError),
+            }
         }
 
         pub fn stage() -> AdHoc {
