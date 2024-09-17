@@ -1,4 +1,4 @@
-FROM clux/muslrust:stable as build
+FROM clux/muslrust:stable AS build
 
 # create a new empty shell project
 RUN USER=root cargo new --bin my-budget
@@ -15,7 +15,8 @@ RUN cargo build --release
 COPY ./Rocket.toml .
 COPY ./wwwroot ./wwwroot
 
-RUN cp $(find target/* -type d -not -name 'release' -print -quit)/release/my-budget my-budget
+#RUN cp $(find target/* -type d -not -name 'release' -print -quit)/release/my-budget my-budget
+RUN cp $(for i in $(ls -d target/*/); do echo ${i%%/}; done | grep linux)/release/my-budget my-budget
 
 # our final base
 FROM alpine
