@@ -29,6 +29,13 @@
                     aria-describedby="payHelp" placeholder="Enter pay">
                 <small id="payHelp" class="form-text text-muted">The total net amount you get paid each month.</small>
             </div>
+            <div class="form-group">
+                <label for="pay">Calculate Daily Rate to End of Month</label>
+                <input type="checkbox" class="form-control" id="calc_to_eom" v-model="info.calc_to_eom" name="calc_to_eom"
+                    aria-describedby="eomHelp" :true-value="'true'"
+                    :false-value="'false'">
+                <small id="eomHelp" class="form-text text-muted">If you are after payday, should the daily rate calculation terminate on the 1st of the end of the month.</small>
+            </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
     </div>
@@ -44,7 +51,8 @@
                     payday: 0,
                     weekdaySaving: 0,
                     dailyRate: 0,
-                    pay: 0
+                    pay: 0,
+                    calc_to_eom: "true"
                 }
             }
         },
@@ -64,7 +72,13 @@
                     })
             },
             onSubmit(event) {
-                axios.post('api/settings', this.info)
+                    const payload = Object.keys(this.info).map(key => {
+        return {
+            name: key,
+            value: this.info[key].toString()
+        };
+    });
+                axios.post('api/settings', payload)
                     .then(function (response) {
                         //TODO: done? spinner vif?
                         this.refresh();

@@ -40,7 +40,6 @@ pub async fn test_data(db: Db) -> PublicItem {
     )
     .expect("failed to read weekdaySaving setting");
 
-    //TODO: add to settings client and wrapper
     let calc_to_eom = &get_setting(&db, String::from("calc_to_eom"), String::from("true")).await;
     let calc_to_eom = if calc_to_eom == &String::from("true") {
         true

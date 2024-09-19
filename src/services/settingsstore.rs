@@ -4,15 +4,7 @@ use diesel::{ExpressionMethods, RunQueryDsl};
 use crate::models::settings::{settings, SettingDatabaseObject};
 use crate::Db;
 
-use lazy_static::lazy_static;
-
-use std::sync::Mutex;
-
 pub type Result<T, E = rocket::response::Debug<diesel::result::Error>> = std::result::Result<T, E>;
-
-lazy_static! {
-    static ref my_mutex: Mutex<i32> = Mutex::new(0i32);
-}
 
 pub async fn get_collection(db: &Db) -> Vec<SettingDatabaseObject> {
     let ids: Vec<SettingDatabaseObject> = db
@@ -54,6 +46,7 @@ pub async fn get_setting(db: &Db, setting_name: String, default_value: String) -
 
 //TODO: &str
 pub async fn set_setting(db: &Db, name: String, value: String) {
+    //TODO: ensure that it is matching to an existing setting
     let name_clone = name.clone();
 
     let setting: Option<SettingDatabaseObject> = db

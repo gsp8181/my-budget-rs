@@ -4,15 +4,7 @@ use diesel::{ExpressionMethods, RunQueryDsl};
 use crate::models::item::{item, Category, DatabaseObject, Db_Name, JsonEntryObject};
 use crate::Db;
 
-use lazy_static::lazy_static;
-
-use std::sync::Mutex;
-
 pub type Result<T, E = rocket::response::Debug<diesel::result::Error>> = std::result::Result<T, E>;
-
-lazy_static! {
-    static ref my_mutex: Mutex<i32> = Mutex::new(0i32);
-}
 
 pub async fn get_collection(db: &Db) -> Vec<DatabaseObject> {
     let ids: Vec<DatabaseObject> = db.run(move |conn| item::table.load(conn)).await.unwrap();

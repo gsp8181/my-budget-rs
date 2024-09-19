@@ -1,7 +1,7 @@
 use rocket::{fairing::AdHoc, serde::json::Json};
 
 use crate::{
-    models::settings::{SettingDatabaseObject, SettingEntryObject},
+    models::settings::SettingDatabaseObject,
     services::settingsstore::{get_collection, get_setting, set_setting},
     Db,
 };
@@ -19,17 +19,10 @@ async fn get_by_id(db: Db, id: String) -> String {
 }
 
 #[post("/", format = "json", data = "<obj>")]
-async fn post(db: Db, obj: Json<SettingEntryObject>) {
-    //TODO: no other practical way to work with the braindead API in the UI
-    set_setting(&db, String::from("dailyRate"), obj.dailyRate.clone()).await;
-    set_setting(&db, String::from("pay"), obj.pay.clone()).await;
-    set_setting(&db, String::from("payday"), obj.payday.clone()).await;
-    set_setting(
-        &db,
-        String::from("weekdaySaving"),
-        obj.weekdaySaving.clone(),
-    )
-    .await;
+async fn post(db: Db, obj: Json<Vec<SettingDatabaseObject>>) {
+    for setting in obj.0 {
+        set_setting(&db, setting.name, setting.value).await;
+    }
 }
 
 pub fn stage() -> AdHoc {
@@ -37,10 +30,3 @@ pub fn stage() -> AdHoc {
         rocket.mount("/api/settings".to_string(), routes![get, get_by_id, post])
     })
 }
-
-/*
-pub const PAYDAY: u32 = 30;
-pub const WEEKDAY_SAVING: Decimal = dec!(25);
-pub const DAILY_RATE: Decimal = dec!(40);
-pub const TOTAL_PAY: Decimal = dec!(1000.00);
- */

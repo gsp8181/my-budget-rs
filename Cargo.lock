@@ -999,7 +999,6 @@ dependencies = [
  "diesel",
  "diesel-derive-enum",
  "diesel_migrations",
- "lazy_static",
  "rand",
  "rocket",
  "rocket_sync_db_pools",
