@@ -1,0 +1,18 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cursive = "0.21"
+cursive_table_view = "0.15"
+rand = "0.8"
+serde = { version = "1.0.*", features = ["derive"] }
+serde_json = "1.0.*"
+chrono = "0.4.38"
+rust_decimal = "1.*"
+rust_decimal_macros = "1.*"
+#reqwest = { version = "0.12", features = ["json"] }
+#tokio = { version = "1", features = ["full"] }
+ureq = { version = "2.*", features = ["json"] }
+toml = "*"
