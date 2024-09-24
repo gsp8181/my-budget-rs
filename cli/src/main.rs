@@ -2,15 +2,16 @@ mod structs;
 
 extern crate cursive_table_view;
 
-use std::{fs::File, io::Read};
+use std::{cmp::Ordering, fs::File, io::Read};
 
 use cursive::{
     event::Key,
-    view::{Nameable, Scrollable},
-    views::{LinearLayout, Panel, TextView},
+    view::{Nameable, Resizable, Scrollable},
+    views::{Dialog, LinearLayout, Panel, TextView},
     Cursive,
 };
-use structs::PublicItem;
+use cursive_table_view::TableView;
+use structs::{BasicColumn, JsonObject, PublicItem};
 
 fn tview(siv: &mut Cursive) {
     siv.pop_layer();
@@ -43,6 +44,12 @@ fn tview(siv: &mut Cursive) {
         }
     }
     let resp = req.call().unwrap().into_json::<PublicItem>().unwrap();
+
+    let mut table = TableView::<JsonObject, BasicColumn>::new()
+        .column(BasicColumn::Name, "Name", |c| c)
+        .column(BasicColumn::Amount, "Amount", |c| c.width_percent(20));
+
+    table.set_items(resp.today.clone());
 
     siv.add_layer(
         LinearLayout::vertical()
@@ -90,15 +97,14 @@ fn tview(siv: &mut Cursive) {
                             .title("Yearly Saved"),
                     ),
             )
-            /*.child(
-                Panel::new(Button::new(
-                    format!(
-                        "Refresh",
-                    ),
-                    |cb| {cb.pop_layer(); tview(cb);}
-                ))
-                .title("Refresh"),
-            ) */
+            .child(
+                Panel::new(
+                    table
+                        .with_name("table")
+                        .min_size((0, 2 + &(resp.today).len())),
+                )
+                .title("Payments Today"),
+            )
             .scrollable()
             .scroll_x(true)
             .with_name("budget"),
