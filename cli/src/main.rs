@@ -5,9 +5,10 @@ extern crate cursive_table_view;
 use std::{cmp::Ordering, fs::File, io::Read};
 
 use cursive::{
+    align::HAlign,
     event::Key,
     view::{Nameable, Resizable, Scrollable},
-    views::{Dialog, LinearLayout, Panel, TextView},
+    views::{LinearLayout, Panel, TextView},
     Cursive,
 };
 use cursive_table_view::TableView;
@@ -16,33 +17,7 @@ use structs::{BasicColumn, JsonObject, PublicItem};
 fn tview(siv: &mut Cursive) {
     siv.pop_layer();
 
-    let mut file = File::open("config.toml").expect("Failed to open config.toml");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Failed to read config.toml");
-
-    let tomltwable = contents.parse::<toml::Table>().unwrap();
-
-    // todo, parse headers
-
-    let mut req = ureq::get(&format!(
-        "{}/api/",
-        tomltwable["connection"]["url"]
-            .as_str()
-            .expect("Failed to read url property in connection section of config.toml")
-    ));
-
-    if let Some(table) = tomltwable["headers"].as_table() {
-        for header in table.iter() {
-            req = req.set(
-                header.0,
-                header
-                    .1
-                    .as_str()
-                    .expect(&format!("failed to read header {}", header.0)),
-            );
-        }
-    }
+    let req = build_req("");
     let resp = req.call().unwrap().into_json::<PublicItem>().unwrap();
 
     let mut table = TableView::<JsonObject, BasicColumn>::new()
@@ -111,6 +86,69 @@ fn tview(siv: &mut Cursive) {
     );
 }
 
+fn iview(siv: &mut Cursive) {
+    siv.pop_layer();
+
+    let req = build_req("bank");
+
+    let resp = req.call().unwrap().into_json::<Vec<JsonObject>>().unwrap();
+
+    let mut table = TableView::<JsonObject, BasicColumn>::new()
+        .column(BasicColumn::Name, "Name", |c| c.width_percent(80))
+        .column(BasicColumn::Amount, "Amount", |c| {
+            c.ordering(Ordering::Greater)
+                .align(HAlign::Right)
+                .width_percent(20)
+        });
+
+    table.set_items(resp.clone());
+
+    siv.add_fullscreen_layer(
+        Panel::new(
+            table
+                .with_name("table")
+                .min_size((60, 2 + &(resp).len()))
+                .scrollable()
+                .scroll_x(true)
+                .full_screen(),
+        )
+        .title("Payments Today")
+        .full_width()
+        .full_screen()
+        .with_name("budget"),
+    );
+}
+
+fn build_req(api_name: &str) -> ureq::Request {
+    let mut file = File::open("config.toml").expect("Failed to open config.toml");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .expect("Failed to read config.toml");
+
+    let tomltwable = contents.parse::<toml::Table>().unwrap();
+
+    let mut req = ureq::get(&format!(
+        "{}/api/{}",
+        tomltwable["connection"]["url"]
+            .as_str()
+            .expect("Failed to read url property in connection section of config.toml"),
+        api_name
+    ));
+
+    if let Some(table) = tomltwable["headers"].as_table() {
+        for header in table.iter() {
+            req = req.set(
+                header.0,
+                header
+                    .1
+                    .as_str()
+                    .expect(&format!("failed to read header {}", header.0)),
+            );
+        }
+    }
+    req
+}
+
 fn main() {
     // Creates the cursive root - required for every application.
     let mut siv = cursive::default();
@@ -123,7 +161,8 @@ fn main() {
         // We add a new "File" tree
         .add_delimiter()
         .add_leaf("Quit", |s| s.quit())
-        .add_leaf("Refresh", tview);
+        .add_leaf("Refresh", tview)
+        .add_leaf("Bank", |cb| iview(cb));
 
     siv.set_autohide_menu(false);
 
