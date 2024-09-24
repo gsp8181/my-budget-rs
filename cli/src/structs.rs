@@ -86,7 +86,7 @@ impl TableViewItem<BasicColumn> for JsonObject {
     fn to_column(&self, column: BasicColumn) -> String {
         match column {
             BasicColumn::Name => self.name.to_string(),
-            BasicColumn::Amount => format!("£{}", self.amount),
+            BasicColumn::Amount => format!("£{:.2}", self.amount),
             BasicColumn::Day => format!("{:?}", self.day), //TODO: fix option printinga
             BasicColumn::CardId => format!("{:?}", self.cardid), //TODO: fix option printing
         }

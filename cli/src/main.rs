@@ -7,6 +7,7 @@ use std::{cmp::Ordering, fs::File, io::Read};
 use cursive::{
     align::HAlign,
     event::Key,
+    menu,
     view::{Nameable, Resizable, Scrollable},
     views::{LinearLayout, Panel, TextView},
     Cursive,
@@ -18,7 +19,11 @@ fn tview(siv: &mut Cursive) {
     siv.pop_layer();
 
     let req = build_req("");
-    let resp = req.call().unwrap().into_json::<PublicItem>().unwrap();
+    let resp = req
+        .call()
+        .expect("Failed to read JSON for base API")
+        .into_json::<PublicItem>()
+        .unwrap();
 
     let mut table = TableView::<JsonObject, BasicColumn>::new()
         .column(BasicColumn::Name, "Name", |c| c)
@@ -86,12 +91,16 @@ fn tview(siv: &mut Cursive) {
     );
 }
 
-fn iview(siv: &mut Cursive) {
+fn iview(siv: &mut Cursive, api_name: &str, title: &str) {
     siv.pop_layer();
 
-    let req = build_req("bank");
+    let req = build_req(api_name);
 
-    let resp = req.call().unwrap().into_json::<Vec<JsonObject>>().unwrap();
+    let resp = req
+        .call()
+        .unwrap()
+        .into_json::<Vec<JsonObject>>()
+        .expect(&format!("Failed to read JSON for {}", api_name));
 
     let mut table = TableView::<JsonObject, BasicColumn>::new()
         .column(BasicColumn::Name, "Name", |c| c.width_percent(80))
@@ -112,7 +121,7 @@ fn iview(siv: &mut Cursive) {
                 .scroll_x(true)
                 .full_screen(),
         )
-        .title("Payments Today")
+        .title(title)
         .full_width()
         .full_screen()
         .with_name("budget"),
@@ -158,11 +167,42 @@ fn main() {
     siv.add_global_callback('q', |s| s.quit());
 
     siv.menubar()
-        // We add a new "File" tree
+        .add_leaf("Home", tview)
+        .add_subtree(
+            "Credit",
+            menu::Tree::new()
+                .leaf("Bank", |cb| iview(cb, "bank", "Bank Accounts"))
+                .leaf("Cash", |cb| iview(cb, "cash", "Cash"))
+                .leaf("Regular Credit", |cb| {
+                    iview(cb, "regularcredit", "Regular Credit")
+                })
+                .leaf("Card Items Held Off Balance", |cb| {
+                    iview(cb, "cardheld", "Card Items Held Off Balance")
+                })
+                .leaf("Uncleared Item", |cb| {
+                    iview(cb, "uncleared", "Uncleared Payment On Card")
+                })
+                .leaf("Debt Owed to Me", |cb| iview(cb, "debt", "Debt"))
+                .leaf("Misc Credit", |cb: &mut Cursive| {
+                    iview(cb, "misccredit", "Miscellaneous Credit")
+                }),
+        )
+        .add_subtree(
+            "Debit",
+            menu::Tree::new()
+                .leaf("Card Balance", |cb| {
+                    iview(cb, "cardbalance", "Card Balance")
+                })
+                .leaf("Regular Payment", |cb| {
+                    iview(cb, "regularpayment", "Regular Payment")
+                })
+                .leaf("Debt I Owe", |cb| iview(cb, "debtto", "Debt Owed"))
+                .leaf("Misc Debit", |cb| {
+                    iview(cb, "miscdebit", "Miscellaneous Debit")
+                }),
+        )
         .add_delimiter()
-        .add_leaf("Quit", |s| s.quit())
-        .add_leaf("Refresh", tview)
-        .add_leaf("Bank", |cb| iview(cb));
+        .add_leaf("Quit", |s| s.quit());
 
     siv.set_autohide_menu(false);
 
