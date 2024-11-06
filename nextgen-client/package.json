@@ -1,0 +1,45 @@
+{
+  "name": "material-ui-cra",
+  "version": "5.0.0",
+  "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "@emotion/react": "latest",
+    "@emotion/styled": "latest",
+    "@mui/icons-material": "latest",
+    "@mui/material": "latest",
+    "@mui/x-charts": "latest",
+    "@mui/x-data-grid": "latest",
+    "@mui/x-date-pickers": "latest",
+    "@mui/x-tree-view": "latest",
+    "dayjs": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router-dom": "^6.27.0",
+    "react-scripts": "latest"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-import": "latest",
+    "eslint-plugin-react": "^7.37.2",
+    "globals": "^15.12.0"
+  }
+}
