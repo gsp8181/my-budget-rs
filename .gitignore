@@ -1,6 +1,6 @@
-/target
-/.vscode
-/src copy
+**/target/
+**/.vscode
+**/src copy
 /upload
 database.sqlite*
 store.json
@@ -16,3 +16,4 @@ yarn-error.log*
 
 
 client/dist
+cli/config.toml

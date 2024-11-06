@@ -62,7 +62,7 @@ pub struct DatabaseObject {
 }
 
 diesel::table! {
-    use diesel::sql_types::*;
+    use diesel::sql_types::{Integer, Nullable, Text};
     use super::Category;
     use super::Db_Name;
 
@@ -152,7 +152,7 @@ impl TryFrom<&str> for Db_Name {
         match value {
             "debit" => Ok(Db_Name::debit),
             "credit" => Ok(Db_Name::credit),
-            _ => Err(format!("Unknown state: {}", value)),
+            _ => Err(format!("Unknown state: {value}")),
         }
     }
 }
@@ -201,7 +201,7 @@ impl TryFrom<&str> for Category {
             "debt" => Ok(Category::debt),
             "misc" => Ok(Category::misc),
             "recurring" => Ok(Category::recurring),
-            _ => Err(format!("Unknown state: {}", value)),
+            _ => Err(format!("Unknown state: {value}")),
         }
     }
 }

@@ -14,7 +14,7 @@ pub struct SettingDatabaseObject {
 }
 
 diesel::table! {
-    use diesel::sql_types::*;
+    use diesel::sql_types::{Integer, Nullable, Text};
 
     settings (id) {
         id -> Nullable<Integer>,
