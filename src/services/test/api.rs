@@ -607,12 +607,12 @@ fn check_static_totals() {
 }
 
 fn get_local_date(dt_str: &str) -> DateTime<Local> {
-    let dt = Local
+    
+    Local
         .from_local_datetime(
             &DateTime::parse_from_str(dt_str, "%Y %b %d %H:%M:%S%.3f %z")
                 .unwrap()
                 .naive_local(),
         )
-        .unwrap();
-    dt
+        .unwrap()
 }

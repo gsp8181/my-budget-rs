@@ -1,1 +1,0 @@
-docker run --rm -it -w /app/client -v $(pwd):/app node:16-alpine sh

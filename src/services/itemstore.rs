@@ -126,11 +126,11 @@ pub async fn modify_record_by_id(
     let mut dbitem = ids.clone();
 
     if let Some(d) = new_db_obj.name {
-        dbitem.name = d
+        dbitem.name = d;
     }
 
     if let Some(d) = new_db_obj.amount {
-        dbitem.amount = d.to_string()
+        dbitem.amount = d.to_string();
     }
 
     dbitem.day = new_db_obj.day.map(|x| x.parse::<i32>().unwrap());

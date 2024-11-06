@@ -12,7 +12,7 @@ pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonOb
     if now.day() == 1 {
         let month = now.month();
         if month == 10 || month == 5 || month == 7 || month == 12 {
-            dates.push(31)
+            dates.push(31);
         } else if month == 3 {
             dates.push(31);
             dates.push(30);
@@ -28,9 +28,9 @@ pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonOb
         .cloned()
         .for_each(|mut x| {
             if let Db_Name::debit = x.dbName {
-                x.amount = -x.amount
+                x.amount = -x.amount;
             }
-            results.push(x)
+            results.push(x);
         });
 
     results
@@ -173,7 +173,7 @@ pub fn calculate(
                 ..
             } => {
                 if can_be_used_in_calculation(bank_obj, now, &next_payday, after_payday) {
-                    amount += bank_obj.amount
+                    amount += bank_obj.amount;
                 }
             }
             JsonObject {
@@ -181,7 +181,7 @@ pub fn calculate(
                 ..
             } => {
                 if can_be_used_in_calculation(bank_obj, now, &next_payday, after_payday) {
-                    amount -= bank_obj.amount
+                    amount -= bank_obj.amount;
                 }
             }
         }
