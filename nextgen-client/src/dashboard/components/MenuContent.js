@@ -15,15 +15,23 @@ import HelpRoundedIcon from '@mui/icons-material/HelpRounded';
 
 const mainListItems = [
   { text: 'Home', icon: <HomeRoundedIcon /> },
-  { text: 'Analytics', icon: <AnalyticsRoundedIcon /> },
-  { text: 'Clients', icon: <PeopleRoundedIcon /> },
-  { text: 'Tasks', icon: <AssignmentRoundedIcon /> },
+  { text: '' },
+  { text: 'Bank', icon: <AnalyticsRoundedIcon /> },
+  { text: 'Cash', icon: <PeopleRoundedIcon /> },
+  { text: 'Regular Credit', icon: <AssignmentRoundedIcon /> },
+  { text: 'Card Items Held Off Balance', icon: <AssignmentRoundedIcon /> },
+  { text: 'Uncleared Item', icon: <AssignmentRoundedIcon /> },
+  { text: 'Debt Owed To Me', icon: <AssignmentRoundedIcon /> },
+  { text: 'Misc Credit', icon: <AssignmentRoundedIcon /> },
+  { text: '' },
+  { text: 'Card Balance', icon: <AssignmentRoundedIcon /> },
+  { text: 'Regular Payment', icon: <AssignmentRoundedIcon /> },
+  { text: 'Debt I Owe', icon: <AssignmentRoundedIcon /> },
+  { text: 'Misc Debit', icon: <AssignmentRoundedIcon /> },
 ];
 
 const secondaryListItems = [
   { text: 'Settings', icon: <SettingsRoundedIcon /> },
-  { text: 'About', icon: <InfoRoundedIcon /> },
-  { text: 'Feedback', icon: <HelpRoundedIcon /> },
 ];
 
 export default function MenuContent() {

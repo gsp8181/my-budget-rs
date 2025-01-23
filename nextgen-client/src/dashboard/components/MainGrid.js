@@ -12,6 +12,8 @@ import PageViewsBarChart from './PageViewsBarChart';
 import SessionsChart from './SessionsChart';
 import StatCard from './StatCard';
 
+const axios = require('axios').default;
+
 const data = [
   {
     title: 'Users',
@@ -43,6 +45,16 @@ const data = [
       520, 410, 530, 520, 610, 530, 520, 610, 530, 420, 510, 430, 520, 510,
     ],
   },
+  {
+    title: 'Event count',
+    value: '200k',
+    interval: 'Last 30 days',
+    trend: 'neutral',
+    data: [
+      500, 400, 510, 530, 520, 600, 530, 520, 510, 730, 520, 510, 530, 620, 510, 530,
+      520, 410, 530, 520, 610, 530, 520, 610, 530, 420, 510, 430, 520, 510,
+    ],
+  },
 ];
 
 export default function MainGrid() {
@@ -50,7 +62,7 @@ export default function MainGrid() {
     <Box sx={{ width: '100%', maxWidth: { sm: '100%', md: '1700px' } }}>
       {/* cards */}
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
-        Overview
+        Dashboard
       </Typography>
       <Grid
         container
@@ -63,15 +75,6 @@ export default function MainGrid() {
             <StatCard {...card} />
           </Grid>
         ))}
-        <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-          <HighlightedCard />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <SessionsChart />
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <PageViewsBarChart />
-        </Grid>
       </Grid>
       <Typography component="h2" variant="h6" sx={{ mb: 2 }}>
         Details
@@ -80,12 +83,18 @@ export default function MainGrid() {
         <Grid size={{ xs: 12, lg: 9 }}>
           <CustomizedDataGrid />
         </Grid>
-        <Grid size={{ xs: 12, lg: 3 }}>
-          <Stack gap={2} direction={{ xs: 'column', sm: 'row', lg: 'column' }}>
-            <CustomizedTreeView />
-            <ChartUserByCountry />
-          </Stack>
-        </Grid>
+      </Grid>
+      <Grid
+        container
+        spacing={2}
+        columns={12}
+        sx={{ mb: (theme) => theme.spacing(2) }}
+      >
+        {data.map((card, index) => (
+          <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
+            <StatCard {...card} />
+          </Grid>
+        ))}
       </Grid>
       <Copyright sx={{ my: 4 }} />
     </Box>
