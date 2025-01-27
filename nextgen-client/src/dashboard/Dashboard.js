@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 import { alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -24,6 +25,7 @@ const xThemeComponents = {
 };
 
 export default function Dashboard(props) {
+
   return (
     <AppTheme {...props} themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
@@ -41,18 +43,33 @@ export default function Dashboard(props) {
             overflow: 'auto',
           })}
         >
-          <Stack
-            spacing={2}
-            sx={{
-              alignItems: 'center',
-              mx: 3,
-              pb: 5,
-              mt: { xs: 8, md: 0 },
-            }}
-          >
-            <Header />
-            <MainGrid />
-          </Stack>
+          <Router>
+            <Stack
+              spacing={2}
+              sx={{
+                alignItems: 'center',
+                mx: 3,
+                pb: 5,
+                mt: { xs: 8, md: 0 },
+              }}
+            >
+              
+              <Routes>
+                <Route path="/" element={
+                  <>
+                    <Header pageName="Home" />
+                    <MainGrid />
+                  </>
+                } />
+                <Route path="/bank" element={
+                  <>
+                    <Header pageName="Bank" />
+                    <MainGrid />
+                  </>
+                } />
+              </Routes>
+            </Stack>
+          </Router>
         </Box>
       </Box>
     </AppTheme>

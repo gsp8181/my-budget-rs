@@ -9,7 +9,6 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
-    "axios": "latest",
     "@emotion/react": "latest",
     "@emotion/styled": "latest",
     "@mui/icons-material": "latest",
@@ -18,6 +17,7 @@
     "@mui/x-data-grid": "latest",
     "@mui/x-date-pickers": "latest",
     "@mui/x-tree-view": "latest",
+    "axios": "latest",
     "dayjs": "latest",
     "react": "latest",
     "react-dom": "latest",
@@ -39,7 +39,7 @@
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "eslint": "^8.57.1",
-    "eslint-plugin-import": "latest",
+    "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-react": "^7.37.2",
     "globals": "^15.12.0"
   }

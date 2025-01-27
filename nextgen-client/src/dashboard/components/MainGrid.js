@@ -7,54 +7,97 @@ import Copyright from '../internals/components/Copyright';
 import ChartUserByCountry from './ChartUserByCountry';
 import CustomizedTreeView from './CustomizedTreeView';
 import CustomizedDataGrid from './CustomizedDataGrid';
+import StaticDataGrid from './StaticDataGrid';
 import HighlightedCard from './HighlightedCard';
 import PageViewsBarChart from './PageViewsBarChart';
 import SessionsChart from './SessionsChart';
 import StatCard from './StatCard';
+import DumbCard from './DumbCard';
 
 const axios = require('axios').default;
 
-const data = [
+// // Fetch data from the API
+// axios.get('https://budget.gsp8181.co.uk/api')
+//   .then(response => {
+//     console.log(response.data);
+//     // You can update the state or handle the response data here
+//   })
+//   .catch(error => {
+//     console.error('There was an error fetching the data!', error);
+//   });
+
+var fakeapidata = {
+  "amount": "-1.30",
+  "remaining_week": "328.70",
+  "end_of_week": "168.70",
+  "full_weekend": "248.70",
+  "monthly_debits": "836.40",
+  "monthly_credits": "3489.79",
+  "net_saved_this_month": "-1",
+  "card_held_total": "3917.10",
+  "net_saved_avg": "1103.39",
+  "saved_this_year": "13578.18",
+  "today": [{"id":1,"oldId":null,"category":"bank","name":"Starling","day":null,"amount":"907.02","cardid":null,"dbName":"credit"},{"id":2,"oldId":null,"category":"bank","name":"Chase","day":null,"amount":"0","cardid":null,"dbName":"credit"}]
+}
+
+const extractedData = [
   {
-    title: 'Users',
-    value: '14k',
-    interval: 'Last 30 days',
-    trend: 'up',
-    data: [
-      200, 24, 220, 260, 240, 380, 100, 240, 280, 240, 300, 340, 320, 360, 340, 380,
-      360, 400, 380, 420, 400, 640, 340, 460, 440, 480, 460, 600, 880, 920,
-    ],
+    title: "Amount",
+    value: `£${fakeapidata.amount}`,
+    description: "Amount spent today",
+    trend: "up"
   },
   {
-    title: 'Conversions',
-    value: '325',
-    interval: 'Last 30 days',
-    trend: 'down',
-    data: [
-      1640, 1250, 970, 1130, 1050, 900, 720, 1080, 900, 450, 920, 820, 840, 600, 820,
-      780, 800, 760, 380, 740, 660, 620, 840, 500, 520, 480, 400, 360, 300, 220,
-    ],
+    title: "End of Week",
+    value: `£${fakeapidata.end_of_week}`,
+    description: "Amount left at the end of the week",
+    trend: "neutral"
   },
   {
-    title: 'Event count',
-    value: '200k',
-    interval: 'Last 30 days',
-    trend: 'neutral',
-    data: [
-      500, 400, 510, 530, 520, 600, 530, 520, 510, 730, 520, 510, 530, 620, 510, 530,
-      520, 410, 530, 520, 610, 530, 520, 610, 530, 420, 510, 430, 520, 510,
-    ],
+    title: "Remaining Week",
+    value: `£${fakeapidata.remaining_week}`,
+    description: "Amount left for the rest of the week",
+        trend: "neutral"
   },
   {
-    title: 'Event count',
-    value: '200k',
-    interval: 'Last 30 days',
-    trend: 'neutral',
-    data: [
-      500, 400, 510, 530, 520, 600, 530, 520, 510, 730, 520, 510, 530, 620, 510, 530,
-      520, 410, 530, 520, 610, 530, 520, 610, 530, 420, 510, 430, 520, 510,
-    ],
+    title: "Full Weekend",
+    value: `£${fakeapidata.full_weekend}`,
+    description: "Amount left for the weekend",
+        trend: "neutral"
+  }
+];
+
+const extractedData2 = [
+  {
+    title: "Monthly Credits",
+    value: `£${fakeapidata.monthly_credits}`,
+    description: "Credits monthly",
+    trend: "up"
   },
+  {
+    title: "Monthly Debits",
+    value: `£${fakeapidata.monthly_debits}`,
+    description: "Debits Monthly",
+    trend: "down"
+  },
+  {
+    title: "Card Balance Held",
+    value: `£${fakeapidata.card_held_total}`,
+    description: "Amount saved from card balances",
+        trend: "down"
+  },
+  {
+    title: "Monthly Saved",
+    value: `£${fakeapidata.net_saved_avg}`,
+    description: "Amount saved per month",
+        trend: "up"
+  },
+  {
+    title: "Yearly Saved",
+    value: `£${fakeapidata.saved_this_year}`,
+    description: "Amount saved per annum",
+        trend: "up"
+  }
 ];
 
 export default function MainGrid() {
@@ -70,9 +113,9 @@ export default function MainGrid() {
         columns={12}
         sx={{ mb: (theme) => theme.spacing(2) }}
       >
-        {data.map((card, index) => (
+        {extractedData.map((card, index) => (
           <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <StatCard {...card} />
+            <DumbCard {...card} />
           </Grid>
         ))}
       </Grid>
@@ -81,7 +124,7 @@ export default function MainGrid() {
       </Typography>
       <Grid container spacing={2} columns={12}>
         <Grid size={{ xs: 12, lg: 9 }}>
-          <CustomizedDataGrid />
+          <StaticDataGrid data={fakeapidata.today} />
         </Grid>
       </Grid>
       <Grid
@@ -90,9 +133,9 @@ export default function MainGrid() {
         columns={12}
         sx={{ mb: (theme) => theme.spacing(2) }}
       >
-        {data.map((card, index) => (
+        {extractedData2.map((card, index) => (
           <Grid key={index} size={{ xs: 12, sm: 6, lg: 3 }}>
-            <StatCard {...card} />
+            <DumbCard {...card} />
           </Grid>
         ))}
       </Grid>
