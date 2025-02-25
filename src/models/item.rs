@@ -205,3 +205,17 @@ impl TryFrom<&str> for Category {
         }
     }
 }
+
+impl Category {
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            Category::bank => "bank",
+            Category::cardbalance => "cardbalance",
+            Category::creditcard => "creditcard",
+            Category::cash => "cash",
+            Category::debt => "debt",
+            Category::misc => "misc",
+            Category::recurring => "recurring",
+        }
+    }
+}
