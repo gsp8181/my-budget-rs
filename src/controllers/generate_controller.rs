@@ -8,7 +8,7 @@ macro_rules! generate_controller {
         use $crate::services::itemstore::Result;
         use $crate::Db;
 
-        use $crate::helper::get_attributes;
+        use $crate::helper::{get_attributes, log_query};
         use $crate::models::item::{Category, DatabaseObject, Db_Name, JsonEntryObject};
         use $crate::services::itemstore::{
             delete_record_by_id, get_record_by_id, insert_record, modify_record_by_id,
@@ -17,6 +17,7 @@ macro_rules! generate_controller {
 
         #[get("/")]
         async fn get(db: Db) -> Result<Json<Vec<DatabaseObject>>, Status> {
+            log_query("GET_ALL", $category.to_str(), "Fetching all records", None);
             match print_all_values(&db, $db_name, $category, false).await {
                 Ok(result) => Ok(Json(result)),
                 Err(_) => Err(Status::InternalServerError),
@@ -25,6 +26,7 @@ macro_rules! generate_controller {
 
         #[get("/<id>")]
         async fn get_by_id(db: Db, id: i32) -> Result<Json<DatabaseObject>, Status> {
+            log_query("GET_BY_ID", $category.to_str(), &format!("Fetching record id: {}", id), None);
             match get_record_by_id(&db, $db_name, $category, id).await {
                 Ok(v) => Ok(Json(v)),
                 Err(_) => Err(Status::NotFound),
@@ -33,6 +35,12 @@ macro_rules! generate_controller {
 
         #[post("/", format = "json", data = "<obj>")]
         async fn post(db: Db, obj: Json<JsonEntryObject>) -> Result<Json<DatabaseObject>, Status> {
+            log_query(
+                "POST",
+                $category.to_str(),
+                "Creating new record",
+                Some(&serde_json::to_value(&obj.0).unwrap_or_default())
+            );
             match insert_record(&db, $db_name, $category, obj.0, get_attributes($attributes)).await
             {
                 Ok(result) => Ok(Json(result)),
@@ -46,6 +54,12 @@ macro_rules! generate_controller {
             id: i32,
             obj: Json<JsonEntryObject>,
         ) -> Result<Json<DatabaseObject>, Status> {
+            log_query(
+                "PUT",
+                $category.to_str(),
+                &format!("Updating record id: {}", id),
+                Some(&serde_json::to_value(&obj.0).unwrap_or_default())
+            );
             match modify_record_by_id(
                 &db,
                 $db_name,
@@ -63,6 +77,7 @@ macro_rules! generate_controller {
 
         #[delete("/<id>")]
         async fn delete(db: Db, id: i32) -> Result<Status, Status> {
+            log_query("DELETE", $category.to_str(), &format!("Deleting record id: {}", id), None);
             match delete_record_by_id(&db, $db_name, $category, id).await {
                 Ok(_) => Ok(Status::NoContent),
                 Err(_) => Err(Status::InternalServerError),
