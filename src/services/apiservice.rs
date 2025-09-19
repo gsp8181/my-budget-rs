@@ -11,7 +11,7 @@ fn apply_currency_conversion(item: &mut JsonObject) {
             let rate_str = &parts[0][4..]; // Remove "CUR:" prefix
             if let Ok(rate) = rate_str.parse::<f64>() {
                 if let Some(rate_decimal) = Decimal::from_f64(rate) {
-                    item.amount = item.amount * rate_decimal;
+                    item.amount = item.amount / rate_decimal;
                 }
             }
         }
