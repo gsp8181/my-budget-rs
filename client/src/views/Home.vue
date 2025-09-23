@@ -17,7 +17,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Balance Held</div>
-                  <div id="data-balance" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.amount}}</div>
+                  <div id="data-balance" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.amount)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -35,7 +35,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-success text-uppercase mb-1">End Of Week Total</div>
-                  <div id="data-end_of_week" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.end_of_week}}</div>
+                  <div id="data-end_of_week" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.end_of_week)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-pound-sign fa-2x text-gray-300"></i>
@@ -51,7 +51,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Full Weekend Total</div>
-                  <div id="data-full_weekend" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.full_weekend}}</div>
+                  <div id="data-full_weekend" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.full_weekend)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-pound-sign fa-2x text-gray-300"></i>
@@ -67,7 +67,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Remaining Week Total</div>
-                  <div id="data-remaining_week" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.remaining_week}}</div>
+                  <div id="data-remaining_week" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.remaining_week)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-pound-sign fa-2x text-gray-300"></i>
@@ -102,7 +102,7 @@
                   <tr v-for="(element, index) in info.today">
                     <td scope='row'>{{ index + 1 }}</td>
                     <td>{{ element.name }}</td>
-                    <td>{{ element.amount }}</td>
+                    <td>{{ formatCurrency(element.amount) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -120,7 +120,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Monthly Credits</div>
-                  <div id="data-monthly_credits" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.monthly_credits}}</div>
+                  <div id="data-monthly_credits" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.monthly_credits)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-pound-sign fa-2x text-gray-300"></i>
@@ -136,7 +136,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Monthly Debits</div>
-                  <div id="data-monthly_debits" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.monthly_debits}}</div>
+                  <div id="data-monthly_debits" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.monthly_debits)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-pound-sign fa-2x text-gray-300"></i>
@@ -154,7 +154,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Card Balance Held</div>
-                  <div id="data-card_held" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.card_held_total}}</div>
+                  <div id="data-card_held" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.card_held_total)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-pound-sign fa-2x text-gray-300"></i>
@@ -174,7 +174,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Monthly Saved</div>
-                  <div id="data-net_saved_avg" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.net_saved_avg}}</div>
+                  <div id="data-net_saved_avg" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.net_saved_avg)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-pound-sign fa-2x text-gray-300"></i>
@@ -190,7 +190,7 @@
               <div class="row no-gutters align-items-center">
                 <div class="col mr-2">
                   <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Yearly Saved</div>
-                  <div id="data-saved_this_year" class="h5 mb-0 font-weight-bold text-gray-800">£{{info.saved_this_year}}</div>
+                  <div id="data-saved_this_year" class="h5 mb-0 font-weight-bold text-gray-800">£{{formatCurrency(info.saved_this_year)}}</div>
                 </div>
                 <div class="col-auto">
                   <i class="fas fa-pound-sign fa-2x text-gray-300"></i>
@@ -227,6 +227,10 @@
         axios
           .get('api/')
           .then(response => (this.info = response.data))
+      },
+      formatCurrency(value) {
+        if (value == null) return '0.00'
+        return parseFloat(value).toFixed(2)
       }
     }
   }
