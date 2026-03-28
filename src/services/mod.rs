@@ -5,6 +5,7 @@ use crate::Db;
 
 pub mod apiservice;
 pub mod itemstore;
+pub mod logstore;
 pub mod settingsstore;
 #[cfg(test)]
 mod test;
