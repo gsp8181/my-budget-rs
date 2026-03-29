@@ -35,7 +35,15 @@ macro_rules! generate_controller {
         async fn post(db: Db, obj: Json<JsonEntryObject>) -> Result<Json<DatabaseObject>, Status> {
             match insert_record(&db, $db_name, $category, obj.0, get_attributes($attributes)).await
             {
-                Ok(result) => Ok(Json(result)),
+                Ok(result) => {
+                    $crate::services::logstore::log_transaction(
+                        "CREATE",
+                        $controllername,
+                        result.id,
+                        &result,
+                    );
+                    Ok(Json(result))
+                }
                 Err(_) => Err(Status::InternalServerError),
             }
         }
@@ -56,7 +64,15 @@ macro_rules! generate_controller {
             )
             .await
             {
-                Ok(result) => Ok(Json(result)),
+                Ok(result) => {
+                    $crate::services::logstore::log_transaction(
+                        "UPDATE",
+                        $controllername,
+                        result.id,
+                        &result,
+                    );
+                    Ok(Json(result))
+                }
                 Err(_) => Err(Status::InternalServerError),
             }
         }
@@ -64,7 +80,15 @@ macro_rules! generate_controller {
         #[delete("/<id>")]
         async fn delete(db: Db, id: i32) -> Result<Status, Status> {
             match delete_record_by_id(&db, $db_name, $category, id).await {
-                Ok(_) => Ok(Status::NoContent),
+                Ok(_) => {
+                    $crate::services::logstore::log_transaction(
+                        "DELETE",
+                        $controllername,
+                        Some(id),
+                        &::serde_json::json!({ "id": id }),
+                    );
+                    Ok(Status::NoContent)
+                }
                 Err(_) => Err(Status::InternalServerError),
             }
         }

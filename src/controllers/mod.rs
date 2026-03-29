@@ -8,6 +8,7 @@ pub mod cash;
 pub mod debt;
 pub mod debtto;
 pub mod generate_controller;
+pub mod logs;
 pub mod misccredit;
 pub mod miscdebit;
 pub mod regularcredit;
@@ -31,5 +32,6 @@ pub fn stage() -> AdHoc {
             .attach(cardheld::stage())
             .attach(settings::stage())
             .attach(api::stage())
+            .attach(logs::stage())
     })
 }
