@@ -1,32 +1,31 @@
-use rocket::{fairing::AdHoc, serde::json::Json};
+use axum::{
+    extract::{Path, State},
+    Json,
+};
 
 use crate::{
     models::settings::SettingDatabaseObject,
     services::settingsstore::{get_collection, get_setting, set_setting},
-    Db,
+    DbPool,
 };
 
-#[get("/")]
-async fn get(db: Db) -> Json<Vec<SettingDatabaseObject>> {
-    let result: Vec<SettingDatabaseObject> = get_collection(&db).await;
-
+async fn get(State(pool): State<DbPool>) -> Json<Vec<SettingDatabaseObject>> {
+    let result: Vec<SettingDatabaseObject> = get_collection(&pool).await;
     Json(result)
 }
 
-#[get("/<id>")]
-async fn get_by_id(db: Db, id: String) -> String {
-    get_setting(&db, id, String::from("1")).await //TODO: LIST
+async fn get_by_id(State(pool): State<DbPool>, Path(id): Path<String>) -> String {
+    get_setting(&pool, id, String::from("1")).await //TODO: LIST
 }
 
-#[post("/", format = "json", data = "<obj>")]
-async fn post(db: Db, obj: Json<Vec<SettingDatabaseObject>>) {
-    for setting in obj.0 {
-        set_setting(&db, setting.name, setting.value).await;
+async fn post(State(pool): State<DbPool>, Json(obj): Json<Vec<SettingDatabaseObject>>) {
+    for setting in obj {
+        set_setting(&pool, setting.name, setting.value).await;
     }
 }
 
-pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("Settings", |rocket| async {
-        rocket.mount("/api/settings".to_string(), routes![get, get_by_id, post])
-    })
+pub fn router() -> axum::Router<DbPool> {
+    axum::Router::new()
+        .route("/", axum::routing::get(get).post(post))
+        .route("/{id}", axum::routing::get(get_by_id))
 }

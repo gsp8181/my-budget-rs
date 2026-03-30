@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
+use axum::{extract::State, Json};
 use chrono::Local;
-use rocket::{fairing::AdHoc, serde::json::Json};
-use rocket::serde::Serialize;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serde::Serialize;
 
 use crate::{
     models::item::{JsonObject, PublicItem},
@@ -13,11 +13,11 @@ use crate::{
         saved_this_year, sum_of_card_held, sum_of_credits, sum_of_debits,
     },
     services::{itemstore::get_collection, settingsstore::get_setting},
-    Db,
+    DbPool,
 };
 
-pub async fn test_data(db: Db) -> PublicItem {
-    let data_from_db = get_collection(&db).await;
+async fn build_public_item(pool: &DbPool) -> PublicItem {
+    let data_from_db = get_collection(pool).await;
     let mut results: Vec<JsonObject> = Vec::new();
     for object in data_from_db {
         results.push(JsonObject::from(object));
@@ -28,23 +28,24 @@ pub async fn test_data(db: Db) -> PublicItem {
 
     //TODO: tuple
     let payday: u32 =
-        u32::from_str(&get_setting(&db, String::from("payday"), String::from("25")).await)
+        u32::from_str(&get_setting(pool, String::from("payday"), String::from("25")).await)
             .expect("failed to read payday setting");
     let daily_rate: Decimal =
-        Decimal::from_str(&get_setting(&db, String::from("dailyRate"), String::from("0")).await)
+        Decimal::from_str(&get_setting(pool, String::from("dailyRate"), String::from("0")).await)
             .expect("failed to read dailyRate setting");
     let total_pay =
-        Decimal::from_str(&get_setting(&db, String::from("pay"), String::from("0")).await)
+        Decimal::from_str(&get_setting(pool, String::from("pay"), String::from("0")).await)
             .expect("failed to read pay setting");
     let weekday_saving = Decimal::from_str(
-        &get_setting(&db, String::from("weekdaySaving"), String::from("0")).await,
+        &get_setting(pool, String::from("weekdaySaving"), String::from("0")).await,
     )
     .expect("failed to read weekdaySaving setting");
 
-    let calc_to_eom = &get_setting(&db, String::from("calc_to_eom"), String::from("true")).await;
-    let calc_to_eom = if calc_to_eom == &String::from("true") {
+    let calc_to_eom_raw =
+        get_setting(pool, String::from("calc_to_eom"), String::from("true")).await;
+    let calc_to_eom = if calc_to_eom_raw == "true" {
         true
-    } else if calc_to_eom == &String::from("false") {
+    } else if calc_to_eom_raw == "false" {
         false
     } else {
         panic!("failed to read calc_to_eom setting")
@@ -93,19 +94,16 @@ pub async fn test_data(db: Db) -> PublicItem {
     }
 }
 
-#[get("/")]
-async fn index(db: Db) -> Json<PublicItem> {
-    Json(test_data(db).await)
+async fn index(State(pool): State<DbPool>) -> Json<PublicItem> {
+    Json(build_public_item(&pool).await)
 }
 
 #[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
 struct UserInfo {
     username: String,
     email: String,
 }
 
-#[get("/me")]
 async fn me() -> Json<UserInfo> {
     // Stubbed values for now
     let info = UserInfo {
@@ -115,8 +113,8 @@ async fn me() -> Json<UserInfo> {
     Json(info)
 }
 
-pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("API Stage", |rocket| async {
-        rocket.mount("/api", routes![index, me])
-    })
+pub fn router() -> axum::Router<DbPool> {
+    axum::Router::new()
+        .route("/", axum::routing::get(index))
+        .route("/me", axum::routing::get(me))
 }

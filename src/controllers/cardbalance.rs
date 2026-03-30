@@ -1,8 +1,3 @@
 use crate::generate_controller;
 
-generate_controller!(CATEGORY, DB_NAME, ATTRIBUTES, CONTROLLERNAME);
-
-const CATEGORY: Category = Category::cardbalance;
-const DB_NAME: Db_Name = Db_Name::debit;
-const ATTRIBUTES: &str = "name,amount"; //TODO:enum?
-const CONTROLLERNAME: &str = "cardbalance";
+generate_controller!(Category::cardbalance, Db_Name::debit, "name,amount");

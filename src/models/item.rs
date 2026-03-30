@@ -6,7 +6,6 @@ use diesel::{
     sqlite::{Sqlite, SqliteValue},
     AsExpression, FromSqlRow, Identifiable, Insertable, Queryable,
 };
-use rocket_sync_db_pools::diesel;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
@@ -29,7 +28,6 @@ pub(crate) struct PublicItem {
 
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(crate = "rocket::serde")]
 pub struct JsonObject {
     //todo: db credit or debit
     pub id: Option<i32>,
@@ -46,7 +44,6 @@ pub struct JsonObject {
 #[derive(
     Debug, Clone, Deserialize, Serialize, Queryable, Insertable, Identifiable, AsChangeset,
 )]
-#[serde(crate = "rocket::serde")]
 #[diesel(table_name = item)]
 pub struct DatabaseObject {
     //TODO: fix me

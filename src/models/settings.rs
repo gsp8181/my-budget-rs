@@ -1,10 +1,8 @@
 use diesel::{prelude::AsChangeset, Identifiable, Insertable, Queryable};
-use rocket_sync_db_pools::diesel;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset)]
-#[serde(crate = "rocket::serde")]
 #[diesel(table_name = settings)]
 //TODO: does not have to be a string
 pub struct SettingDatabaseObject {

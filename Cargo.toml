@@ -7,25 +7,17 @@ publish = false
 [dependencies]
 rand = "*"
 serde = { version = "*", features = ["derive"] }
-serde_json =  "*"
+serde_json = "*"
 chrono = "*"
 rust_decimal = "*"
 rust_decimal_macros = "*"
-#lazy_static = "*"
 diesel = { version = "*", features = [
     "returning_clauses_for_sqlite_3_35",
     "numeric",
 ] }
 diesel_migrations = "*"
 diesel-derive-enum = "*"
-
-[dependencies.rocket]
-version = "*"
-features = ["json"]
-
-[dependencies.rocket_cors]
-version = "*"
-
-[dependencies.rocket_sync_db_pools]
-version = "*"
-features = ["diesel_sqlite_pool", "sqlite_pool"]
+axum = { version = "0.8", features = ["json", "macros"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["fs", "cors"] }
+deadpool-diesel = { version = "0.6", features = ["sqlite"] }
