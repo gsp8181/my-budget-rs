@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 
 import { alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -18,6 +19,7 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from './theme/customizations';
+import API_BASE from '../config';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -25,6 +27,10 @@ const xThemeComponents = {
   ...datePickersCustomizations,
   ...treeViewCustomizations,
 };
+
+const currencyField = { name: 'currency_id', label: 'Currency', type: 'currency' };
+
+const amountCol = { field: 'amount', headerName: 'Amount', width: 150 };
 
 const categoryRoutes = [
   {
@@ -34,12 +40,13 @@ const categoryRoutes = [
     itemName: 'Bank Account',
     columnDefs: [
       { field: 'name', headerName: 'Account', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
     ],
-    defaultFormValues: { name: '', amount: '' },
+    defaultFormValues: { name: '', amount: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Account Name', placeholder: 'Main Current Account' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
+      currencyField,
     ],
   },
   {
@@ -49,12 +56,13 @@ const categoryRoutes = [
     itemName: 'Cash Entry',
     columnDefs: [
       { field: 'name', headerName: 'Description', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
     ],
-    defaultFormValues: { name: '', amount: '' },
+    defaultFormValues: { name: '', amount: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Description', placeholder: 'Change in Wallet' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
+      currencyField,
     ],
   },
   {
@@ -64,14 +72,15 @@ const categoryRoutes = [
     itemName: 'Regular Credit',
     columnDefs: [
       { field: 'name', headerName: 'Creditor', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
       { field: 'day', headerName: 'Day', width: 100 },
     ],
-    defaultFormValues: { name: '', amount: '', day: '' },
+    defaultFormValues: { name: '', amount: '', day: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Creditor', placeholder: 'Rental Income' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
       { name: 'day', label: 'Day of Month', type: 'number', inputProps: { min: 1, max: 31 } },
+      currencyField,
     ],
   },
   {
@@ -81,14 +90,15 @@ const categoryRoutes = [
     itemName: 'Card Item',
     columnDefs: [
       { field: 'name', headerName: 'Item', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
       { field: 'cardid', headerName: 'Card Used', width: 120 },
     ],
-    defaultFormValues: { name: '', amount: '', cardid: '' },
+    defaultFormValues: { name: '', amount: '', cardid: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Item', placeholder: 'Business Expense' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
       { name: 'cardid', label: 'Card ID', type: 'number' },
+      currencyField,
     ],
   },
   {
@@ -98,14 +108,15 @@ const categoryRoutes = [
     itemName: 'Uncleared Item',
     columnDefs: [
       { field: 'name', headerName: 'Item', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
       { field: 'cardid', headerName: 'Card Used', width: 120 },
     ],
-    defaultFormValues: { name: '', amount: '', cardid: '' },
+    defaultFormValues: { name: '', amount: '', cardid: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Item', placeholder: 'Offline Card Payment' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
       { name: 'cardid', label: 'Card ID', type: 'number' },
+      currencyField,
     ],
   },
   {
@@ -115,12 +126,13 @@ const categoryRoutes = [
     itemName: 'Debt',
     columnDefs: [
       { field: 'name', headerName: 'Debtee', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
     ],
-    defaultFormValues: { name: '', amount: '' },
+    defaultFormValues: { name: '', amount: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Debtee', placeholder: 'Owed for Pizza' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
+      currencyField,
     ],
   },
   {
@@ -130,12 +142,13 @@ const categoryRoutes = [
     itemName: 'Misc Credit',
     columnDefs: [
       { field: 'name', headerName: 'Description', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
     ],
-    defaultFormValues: { name: '', amount: '' },
+    defaultFormValues: { name: '', amount: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Description', placeholder: '...' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
+      currencyField,
     ],
   },
   {
@@ -145,12 +158,13 @@ const categoryRoutes = [
     itemName: 'Card Balance',
     columnDefs: [
       { field: 'name', headerName: 'Card Name', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
     ],
-    defaultFormValues: { name: '', amount: '' },
+    defaultFormValues: { name: '', amount: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Card Name', placeholder: 'Main Credit Card' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
+      currencyField,
     ],
   },
   {
@@ -160,14 +174,15 @@ const categoryRoutes = [
     itemName: 'Regular Payment',
     columnDefs: [
       { field: 'name', headerName: 'Description', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
       { field: 'day', headerName: 'Day Taken', width: 120 },
     ],
-    defaultFormValues: { name: '', amount: '', day: '' },
+    defaultFormValues: { name: '', amount: '', day: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Description', placeholder: 'Phone Bill' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
       { name: 'day', label: 'Day of Month', type: 'number', inputProps: { min: 1, max: 31 } },
+      currencyField,
     ],
   },
   {
@@ -177,12 +192,13 @@ const categoryRoutes = [
     itemName: 'Debt',
     columnDefs: [
       { field: 'name', headerName: 'Debtor', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
     ],
-    defaultFormValues: { name: '', amount: '' },
+    defaultFormValues: { name: '', amount: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Debtor', placeholder: 'John Doe' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
+      currencyField,
     ],
   },
   {
@@ -192,17 +208,29 @@ const categoryRoutes = [
     itemName: 'Misc Debit',
     columnDefs: [
       { field: 'name', headerName: 'Description', flex: 1 },
-      { field: 'amount', headerName: 'Amount', width: 150, valueFormatter: (v) => `£${v}` },
+      amountCol,
     ],
-    defaultFormValues: { name: '', amount: '' },
+    defaultFormValues: { name: '', amount: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Description', placeholder: '...' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
+      currencyField,
     ],
   },
 ];
 
 export default function Dashboard(props) {
+  const [currencies, setCurrencies] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/currency`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setCurrencies(data))
+      .catch(() => {});
+  }, []);
+
+  // Default to the oldest currency (lowest id) which is always £.
+  const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
 
   return (
     <AppTheme {...props} themeComponents={xThemeComponents}>
@@ -246,8 +274,9 @@ export default function Dashboard(props) {
                         apiPath={apiPath}
                         pageName={itemName}
                         columnDefs={columnDefs}
-                        defaultFormValues={defaultFormValues}
+                        defaultFormValues={{ ...defaultFormValues, currency_id: defaultCurrencyId }}
                         formFields={formFields}
+                        currencies={currencies}
                       />
                     </>
                   } />

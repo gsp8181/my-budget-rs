@@ -12,7 +12,10 @@ use crate::{
         calculate, end_of_week, full_weekend, get_items_today, net_saved_avg, remaining_week,
         saved_this_year, sum_of_card_held, sum_of_credits, sum_of_debits,
     },
-    services::{itemstore::get_collection, settingsstore::get_setting},
+    services::{
+        currencystore::build_currency_rate_map, itemstore::get_collection,
+        settingsstore::get_setting,
+    },
     DbPool,
 };
 
@@ -25,6 +28,8 @@ async fn build_public_item(pool: &DbPool) -> PublicItem {
 
     //TODO: browsers time??
     let now = Local::now();
+
+    let currency_rates = build_currency_rate_map(pool).await;
 
     //TODO: tuple
     let payday: u32 =
@@ -54,6 +59,7 @@ async fn build_public_item(pool: &DbPool) -> PublicItem {
     PublicItem {
         amount: calculate(
             &results,
+            &currency_rates,
             &now,
             daily_rate,
             payday,
@@ -62,6 +68,7 @@ async fn build_public_item(pool: &DbPool) -> PublicItem {
         ),
         remaining_week: remaining_week(
             &results,
+            &currency_rates,
             &now,
             daily_rate,
             payday,
@@ -70,6 +77,7 @@ async fn build_public_item(pool: &DbPool) -> PublicItem {
         ),
         end_of_week: end_of_week(
             &results,
+            &currency_rates,
             &now,
             daily_rate,
             payday,
@@ -78,19 +86,20 @@ async fn build_public_item(pool: &DbPool) -> PublicItem {
         ),
         full_weekend: full_weekend(
             &results,
+            &currency_rates,
             &now,
             daily_rate,
             payday,
             weekday_saving,
             calc_to_eom,
         ),
-        monthly_debits: sum_of_debits(&results),
-        monthly_credits: sum_of_credits(&results, total_pay),
+        monthly_debits: sum_of_debits(&results, &currency_rates),
+        monthly_credits: sum_of_credits(&results, &currency_rates, total_pay),
         net_saved_this_month: dec!(-1),
-        card_held_total: sum_of_card_held(&results),
-        net_saved_avg: net_saved_avg(&results, daily_rate, total_pay),
-        saved_this_year: saved_this_year(&results, daily_rate, total_pay),
-        today: get_items_today(&results, &now),
+        card_held_total: sum_of_card_held(&results, &currency_rates),
+        net_saved_avg: net_saved_avg(&results, &currency_rates, daily_rate, total_pay),
+        saved_this_year: saved_this_year(&results, &currency_rates, daily_rate, total_pay),
+        today: get_items_today(&results, &currency_rates, &now),
     }
 }
 

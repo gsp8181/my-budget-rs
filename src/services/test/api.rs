@@ -1,5 +1,7 @@
 use chrono::{DateTime, Local, TimeZone};
+use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use std::collections::HashMap;
 
 use crate::{
     models::item::{Category, Db_Name, JsonObject},
@@ -16,6 +18,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(2000.22),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d2 = JsonObject {
@@ -27,6 +30,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(100),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d3: JsonObject = JsonObject {
@@ -38,6 +42,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(25.51),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d4 = JsonObject {
@@ -49,6 +54,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(10.0),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d5 = JsonObject {
@@ -60,6 +66,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(6.20),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d6 = JsonObject {
@@ -71,6 +78,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(125.0),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d7 = JsonObject {
@@ -82,6 +90,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(202.63),
         cardid: Some(14),
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d8 = JsonObject {
@@ -93,6 +102,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(139.0),
         cardid: Some(14),
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d9 = JsonObject {
@@ -104,6 +114,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(104.0),
         cardid: Some(14),
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d10 = JsonObject {
@@ -115,6 +126,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(25.30),
         cardid: Some(14),
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d11 = JsonObject {
@@ -126,6 +138,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(200.27),
         cardid: Some(14),
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d12 = JsonObject {
@@ -137,6 +150,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(92.0),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d13 = JsonObject {
@@ -148,6 +162,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(22.10),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d14 = JsonObject {
@@ -159,6 +174,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(1261.40),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d15 = JsonObject {
@@ -170,6 +186,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(176.02),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d16 = JsonObject {
@@ -181,6 +198,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(1.00),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d17 = JsonObject {
@@ -192,6 +210,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(6.00),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d18 = JsonObject {
@@ -203,6 +222,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(19.99),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d19 = JsonObject {
@@ -214,6 +234,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(40.00),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d20 = JsonObject {
@@ -225,6 +246,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(9.99),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d21 = JsonObject {
@@ -236,6 +258,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(3.50),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d22 = JsonObject {
@@ -247,6 +270,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(7.00),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d23 = JsonObject {
@@ -258,6 +282,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(20.00),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d24 = JsonObject {
@@ -269,6 +294,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(3.99),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d25 = JsonObject {
@@ -280,6 +306,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(5.99),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d26 = JsonObject {
@@ -291,6 +318,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(20),
         cardid: Some(7),
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d27 = JsonObject {
@@ -302,6 +330,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(30),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     let d28 = JsonObject {
@@ -313,6 +342,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(300),
         cardid: None,
         dbName: Db_Name::credit,
+        currency_id: None,
     };
 
     let d29: JsonObject = JsonObject {
@@ -324,6 +354,7 @@ pub fn test_data() -> Vec<JsonObject> {
         amount: dec!(250),
         cardid: None,
         dbName: Db_Name::debit,
+        currency_id: None,
     };
 
     vec![
@@ -350,9 +381,7 @@ fn check_calculate_date_and_pay() {
 
     assert_eq!(
         dec!(1616.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(0),
             25,
             dec!(0),
@@ -362,9 +391,7 @@ fn check_calculate_date_and_pay() {
 
     assert_eq!(
         dec!(1529.81),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(0),
             3,
             dec!(0),
@@ -374,9 +401,7 @@ fn check_calculate_date_and_pay() {
 
     assert_eq!(
         dec!(1613.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
             dec!(0),
             30,
             dec!(0),
@@ -386,9 +411,7 @@ fn check_calculate_date_and_pay() {
 
     assert_eq!(
         dec!(1547.34),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
             dec!(0),
             3,
             dec!(0),
@@ -402,9 +425,7 @@ fn check_calculate_date_and_pay() {
 fn check_calculate_dr_ws() {
     assert_eq!(
         dec!(456.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(40),
             25,
             dec!(40),
@@ -414,9 +435,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(1036.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(20),
             25,
             dec!(40),
@@ -426,9 +445,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(1616.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(0),
             25,
             dec!(40),
@@ -438,9 +455,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(471.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
             25,
             dec!(25),
@@ -450,9 +465,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(456.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
             25,
             dec!(40),
@@ -462,9 +475,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(446.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
             25,
             dec!(50),
@@ -474,9 +485,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(486.33),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 3 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 3 22:13:15.000 +0100"),
             dec!(40),
             25,
             dec!(25),
@@ -486,9 +495,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(666.32),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
             dec!(40),
             25,
             dec!(25),
@@ -498,9 +505,7 @@ fn check_calculate_dr_ws() {
 
     assert_eq!(
         dec!(666.32),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 6 22:13:15.000 +0100"),
             dec!(40),
             25,
             dec!(50),
@@ -514,9 +519,7 @@ fn check_calculate_rollover_payday() {
     let vect: Vec<JsonObject> = vec![];
     assert_eq!(
         dec!(-1200),
-        apiservice::calculate(
-            &vect,
-            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+        apiservice::calculate(&vect, &HashMap::new(), &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
             1,
             dec!(40),
@@ -526,9 +529,7 @@ fn check_calculate_rollover_payday() {
 
     assert_eq!(
         dec!(-2400),
-        apiservice::calculate(
-            &vect,
-            &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
+        apiservice::calculate(&vect, &HashMap::new(), &get_local_date("2024 Sep 2 22:13:15.000 +0100"),
             dec!(40),
             1,
             dec!(40),
@@ -539,9 +540,7 @@ fn check_calculate_rollover_payday() {
     //TODO: should this calculate the test data aswell? currently it does NOT
     assert_eq!(
         dec!(1547.34),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
             dec!(0),
             3,
             dec!(0),
@@ -551,9 +550,7 @@ fn check_calculate_rollover_payday() {
 
     assert_eq!(
         dec!(1547.34),
-        apiservice::calculate(
-            &test_data(),
-            &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
+        apiservice::calculate(&test_data(), &HashMap::new(), &get_local_date("2024 Sep 5 22:13:15.000 +0100"),
             dec!(0),
             3,
             dec!(0),
@@ -570,9 +567,7 @@ fn check_calculate_payday_oor() {
 
     assert_eq!(
         dec!(-1160),
-        apiservice::calculate(
-            &vect,
-            &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
+        apiservice::calculate(&vect, &HashMap::new(), &get_local_date("2024 Sep 1 22:13:15.000 +0100"),
             dec!(40),
             31,
             dec!(40),
@@ -616,3 +611,5 @@ fn get_local_date(dt_str: &str) -> DateTime<Local> {
         )
         .unwrap()
 }
+
+

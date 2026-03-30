@@ -3,6 +3,7 @@ pub mod bank;
 pub mod cardbalance;
 pub mod cardheld;
 pub mod cash;
+pub mod currency;
 pub mod debt;
 pub mod debtto;
 pub mod generate_controller;

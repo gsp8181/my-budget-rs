@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';
@@ -12,16 +12,28 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
 import Alert from '@mui/material/Alert';
 import API_BASE from '../../config';
 
-export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFormValues, formFields }) {
+export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFormValues, formFields, currencies }) {
   const [rows, setRows] = useState([]);
   const [rowModesModel, setRowModesModel] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [formValues, setFormValues] = useState(defaultFormValues);
+  const [currencyFilter, setCurrencyFilter] = useState('all');
+
+  // Build a map of id -> currency for fast lookup
+  const currencyMap = useMemo(() => {
+    const map = {};
+    (currencies || []).forEach(c => { map[c.id] = c; });
+    return map;
+  }, [currencies]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -41,7 +53,6 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleCellClick = useCallback((params) => {
-    // Don't enter edit mode when clicking the actions column
     if (params.field === 'actions') return;
     setRowModesModel((prev) => ({
       ...prev,
@@ -61,7 +72,6 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
   }, []);
 
   const processRowUpdate = useCallback(async (newRow, oldRow) => {
-    // Build only the changed fields to PUT
     const changed = {};
     for (const key of Object.keys(newRow)) {
       if (key !== 'id' && newRow[key] !== oldRow[key]) changed[key] = newRow[key];
@@ -111,10 +121,59 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
     if (e.key === 'Enter') handleAdd();
   };
 
-  const editableColumnDefs = columnDefs.map((col) => ({ ...col, editable: true }));
+  // Custom edit cell for currency_id — a select rendered inside the DataGrid cell.
+  const CurrencyEditCell = useCallback((params) => {
+    return (
+      <Select
+        value={params.value ?? ''}
+        onChange={(e) => params.api.setEditCellValue({ id: params.id, field: 'currency_id', value: e.target.value })}
+        size="small"
+        fullWidth
+        variant="standard"
+        disableUnderline
+      >
+        {(currencies || []).map(c => (
+          <MenuItem key={c.id} value={c.id}>{c.symbol} — {c.name}</MenuItem>
+        ))}
+      </Select>
+    );
+  }, [currencies]);
+
+  // Transform columnDefs: replace valueFormatter on 'amount' with a renderCell
+  // that prepends the correct currency symbol from the row's currency_id.
+  // Also inject an editable Currency column.
+  const enhancedColumnDefs = useMemo(() => {
+    const base = columnDefs.map((col) => {
+      if (col.field !== 'amount') return { ...col, editable: true };
+      return {
+        ...col,
+        editable: true,
+        valueFormatter: undefined,
+        renderCell: (params) => {
+          const currency = currencyMap[params.row.currency_id];
+          const symbol = currency ? currency.symbol : '£';
+          return `${symbol}${params.value}`;
+        },
+      };
+    });
+
+    const currencyCol = {
+      field: 'currency_id',
+      headerName: 'Currency',
+      width: 110,
+      editable: true,
+      renderCell: (params) => {
+        const currency = currencyMap[params.value];
+        return currency ? currency.symbol : '£';
+      },
+      renderEditCell: CurrencyEditCell,
+    };
+
+    return [...base, currencyCol];
+  }, [columnDefs, currencyMap, CurrencyEditCell]);
 
   const columns = [
-    ...editableColumnDefs,
+    ...enhancedColumnDefs,
     {
       field: 'actions',
       type: 'actions',
@@ -154,6 +213,12 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
     },
   ];
 
+  const filteredRows = currencyFilter === 'all'
+    ? rows
+    : rows.filter(r => String(r.currency_id) === String(currencyFilter));
+
+  const hasCurrencies = (currencies || []).length > 1;
+
   return (
     <Box sx={{ width: '100%' }}>
       {error && (
@@ -161,7 +226,22 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
           {error}
         </Alert>
       )}
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
+        {hasCurrencies && (
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel>Currency</InputLabel>
+            <Select
+              value={currencyFilter}
+              label="Currency"
+              onChange={e => setCurrencyFilter(e.target.value)}
+            >
+              <MenuItem value="all">All</MenuItem>
+              {(currencies || []).map(c => (
+                <MenuItem key={c.id} value={c.id}>{c.symbol} — {c.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -178,7 +258,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
         <DataGrid
           autoHeight
           editMode="row"
-          rows={rows}
+          rows={filteredRows}
           columns={columns}
           rowModesModel={rowModesModel}
           onRowModesModelChange={setRowModesModel}
@@ -196,19 +276,36 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
         <DialogTitle>Add {pageName}</DialogTitle>
         <DialogContent>
           {formFields.map((field, idx) => (
-            <TextField
-              key={field.name}
-              label={field.label}
-              type={field.type || 'text'}
-              value={formValues[field.name] ?? ''}
-              onChange={e => setFormValues(prev => ({ ...prev, [field.name]: e.target.value }))}
-              onKeyDown={idx === formFields.length - 1 ? handleAddKeyDown : undefined}
-              fullWidth
-              margin="normal"
-              inputProps={field.inputProps}
-              placeholder={field.placeholder}
-              autoFocus={idx === 0}
-            />
+            field.type === 'currency' ? (
+              <TextField
+                key={field.name}
+                select
+                label={field.label || 'Currency'}
+                value={formValues[field.name] ?? ''}
+                onChange={e => setFormValues(prev => ({ ...prev, [field.name]: e.target.value }))}
+                fullWidth
+                margin="normal"
+                autoFocus={idx === 0}
+              >
+                {(currencies || []).map(c => (
+                  <MenuItem key={c.id} value={c.id}>{c.symbol} — {c.name}</MenuItem>
+                ))}
+              </TextField>
+            ) : (
+              <TextField
+                key={field.name}
+                label={field.label}
+                type={field.type || 'text'}
+                value={formValues[field.name] ?? ''}
+                onChange={e => setFormValues(prev => ({ ...prev, [field.name]: e.target.value }))}
+                onKeyDown={idx === formFields.length - 1 ? handleAddKeyDown : undefined}
+                fullWidth
+                margin="normal"
+                inputProps={field.inputProps}
+                placeholder={field.placeholder}
+                autoFocus={idx === 0}
+              />
+            )
           ))}
         </DialogContent>
         <DialogActions>

@@ -79,6 +79,7 @@ pub async fn insert_record(
         day: new_db_obj.day.map(|x| x.parse::<i32>().unwrap()),
         amount: new_db_obj.amount.unwrap().to_string(),
         cardid: new_db_obj.cardid,
+        currency_id: new_db_obj.currency_id,
     };
 
     let post_value = new_obj.clone();
@@ -133,6 +134,9 @@ pub async fn modify_record_by_id(
     }
     dbitem.day = new_db_obj.day.map(|x| x.parse::<i32>().unwrap());
     dbitem.cardid = new_db_obj.cardid;
+    if new_db_obj.currency_id.is_some() {
+        dbitem.currency_id = new_db_obj.currency_id;
+    }
 
     let conn = pool.get().await?;
     let affected = conn

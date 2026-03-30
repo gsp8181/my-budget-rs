@@ -1,5 +1,7 @@
 GitHub Copilot Chat Assistant — focused, actionable enhancements for the data model and processes in gsp8181/my-budget-rs
 
+Add currencies to output json
+
 Quick summary: your repo uses Rocket + Diesel with SQLite (from Cargo.toml) and has a separate CLI and PHP/JS client. The highest-value changes are: (1) tighten money storage & integrity, (2) formalize reservation/budget rules and precomputed snapshots for fast allowance calculation, (3) make imports idempotent and auditable, and (4) add migrations/backup/CI processes. Below are concrete model and process changes, prioritized and with small examples.
 
 High priority — correctness, integrity, and money handling

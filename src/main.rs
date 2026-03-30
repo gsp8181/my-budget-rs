@@ -15,6 +15,7 @@ pub type DbPool = Arc<Pool>;
 #[derive(Debug)]
 pub enum AppError {
     NotFound,
+    Conflict(String),
     Internal(String),
 }
 
@@ -44,6 +45,7 @@ impl axum::response::IntoResponse for AppError {
         use axum::http::StatusCode;
         match self {
             AppError::NotFound => (StatusCode::NOT_FOUND, "Not found").into_response(),
+            AppError::Conflict(msg) => (StatusCode::CONFLICT, msg).into_response(),
             AppError::Internal(msg) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, msg).into_response()
             }
@@ -95,6 +97,7 @@ fn build_app(pool: DbPool) -> Router {
         .nest("/api/cash", cash::router())
         .nest("/api/cardheld", cardheld::router())
         .nest("/api/settings", settings::router())
+        .nest("/api/currency", currency::router())
         .nest("/api", api::router())
         .fallback_service(ServeDir::new("wwwroot").fallback(ServeFile::new("wwwroot/index.html")));
 

@@ -8,6 +8,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
+import Divider from '@mui/material/Divider';
+import CurrenciesSection from './CurrenciesSection';
 import API_BASE from '../../config';
 
 export default function SettingsPage() {
@@ -126,6 +128,8 @@ export default function SettingsPage() {
         <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>
           Save Settings
         </Button>
+        <Divider />
+        <CurrenciesSection />
       </Stack>
     </Box>
   );

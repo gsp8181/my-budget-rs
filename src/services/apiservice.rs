@@ -1,24 +1,23 @@
 use chrono::{DateTime, Datelike, Local, Months, NaiveDate, TimeZone};
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use rust_decimal_macros::dec;
+use std::collections::HashMap;
 
 use crate::models::item::{Category, Db_Name, JsonObject};
 
-fn apply_currency_conversion(item: &mut JsonObject) {
-    if item.name.starts_with("CUR:") {
-        let parts: Vec<&str> = item.name.splitn(3, ' ').collect();
-        if parts.len() >= 1 { //was 2
-            let rate_str = &parts[0][4..]; // Remove "CUR:" prefix
-            if let Ok(rate) = rate_str.parse::<f64>() {
-                if let Some(rate_decimal) = Decimal::from_f64(rate) {
-                    item.amount = item.amount / rate_decimal;
-                }
+/// Converts an item's amount to GBP using the currency rate map.
+/// Rate of 1 (GBP) means no conversion. Rate of e.g. 0.77 means amount / 0.77.
+fn apply_currency_conversion(item: &mut JsonObject, currency_rates: &HashMap<i32, Decimal>) {
+    if let Some(cid) = item.currency_id {
+        if let Some(&rate) = currency_rates.get(&cid) {
+            if rate != dec!(0) && rate != dec!(1) {
+                item.amount = item.amount / rate;
             }
         }
     }
 }
 
-pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonObject> {
+pub fn get_items_today(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, now: &DateTime<Local>) -> Vec<JsonObject> {
     let mut results: Vec<JsonObject> = Vec::new();
 
     let mut dates: Vec<i32> = vec![now.day() as i32];
@@ -41,7 +40,7 @@ pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonOb
         .filter(|x| dates.contains(&x.day.unwrap()))
         .cloned()
         .for_each(|mut x| {
-            apply_currency_conversion(&mut x);
+            apply_currency_conversion(&mut x, currency_rates);
             if let Db_Name::debit = x.dbName {
                 x.amount = -x.amount;
             }
@@ -51,8 +50,8 @@ pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonOb
     results
 }
 
-pub fn saved_this_year(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -> Decimal {
-    let total = (sum_of_credits(data, total_pay) - sum_of_debits(data)) * dec!(12);
+pub fn saved_this_year(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, daily_rate: Decimal, total_pay: Decimal) -> Decimal {
+    let total = (sum_of_credits(data, currency_rates, total_pay) - sum_of_debits(data, currency_rates)) * dec!(12);
 
     let daily_total = daily_rate * dec!(365.25);
 
@@ -60,20 +59,20 @@ pub fn saved_this_year(data: &[JsonObject], daily_rate: Decimal, total_pay: Deci
     //var dailyTotal = dailyRate * (new DateTime(DateTime.Now.Year, 12, 31)).DayOfYear;
 }
 
-pub fn net_saved_avg(data: &[JsonObject], daily_rate: Decimal, total_pay: Decimal) -> Decimal {
+pub fn net_saved_avg(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, daily_rate: Decimal, total_pay: Decimal) -> Decimal {
     //TODO: not 31
 
-    let total = sum_of_credits(data, total_pay) - sum_of_debits(data);
+    let total = sum_of_credits(data, currency_rates, total_pay) - sum_of_debits(data, currency_rates);
 
     let daily_total = daily_rate * dec!(31);
 
     total - daily_total
 }
 
-pub fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
+pub fn sum_of_card_held(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>) -> Decimal {
     let mut amount = dec!(0);
     for mut bank_obj in data.iter().cloned() {
-        apply_currency_conversion(&mut bank_obj);
+        apply_currency_conversion(&mut bank_obj, currency_rates);
         if let JsonObject {
             dbName: Db_Name::credit,
             category: Category::creditcard,
@@ -86,10 +85,10 @@ pub fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
     amount
 }
 
-pub fn sum_of_credits(data: &[JsonObject], total_pay: Decimal) -> Decimal {
+pub fn sum_of_credits(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, total_pay: Decimal) -> Decimal {
     let mut amount = dec!(0);
     for mut bank_obj in data.iter().cloned() {
-        apply_currency_conversion(&mut bank_obj);
+        apply_currency_conversion(&mut bank_obj, currency_rates);
         if let JsonObject {
             dbName: Db_Name::credit,
             day: Some(_),
@@ -102,10 +101,10 @@ pub fn sum_of_credits(data: &[JsonObject], total_pay: Decimal) -> Decimal {
     amount + total_pay
 }
 
-pub fn sum_of_debits(data: &[JsonObject]) -> Decimal {
+pub fn sum_of_debits(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>) -> Decimal {
     let mut amount = dec!(0);
     for mut bank_obj in data.iter().cloned() {
-        apply_currency_conversion(&mut bank_obj);
+        apply_currency_conversion(&mut bank_obj, currency_rates);
         match bank_obj {
             JsonObject {
                 category: Category::creditcard,
@@ -126,6 +125,7 @@ pub fn sum_of_debits(data: &[JsonObject]) -> Decimal {
 
 pub fn calculate(
     data: &Vec<JsonObject>,
+    currency_rates: &HashMap<i32, Decimal>,
     now: &DateTime<Local>,
     daily_rate: Decimal,
     payday: u32,
@@ -186,7 +186,7 @@ pub fn calculate(
 
     for bank_obj in data.iter().cloned() {
         let mut bank_obj = bank_obj;
-        apply_currency_conversion(&mut bank_obj);
+        apply_currency_conversion(&mut bank_obj, currency_rates);
         match bank_obj {
             JsonObject {
                 dbName: Db_Name::credit,
@@ -257,6 +257,7 @@ pub fn can_be_used_in_calculation(
 
 pub fn remaining_week(
     data: &Vec<JsonObject>,
+    currency_rates: &HashMap<i32, Decimal>,
     now: &DateTime<Local>,
     daily_rate: Decimal,
     payday: u32,
@@ -264,7 +265,7 @@ pub fn remaining_week(
     calc_to_eom: bool,
 ) -> Decimal {
     // This calculates the total to sunday, so adding the daily rate back in and the weekend savings
-    let mut amount = calculate(data, now, daily_rate, payday, weekday_saving, calc_to_eom);
+    let mut amount = calculate(data, currency_rates, now, daily_rate, payday, weekday_saving, calc_to_eom);
 
     let weekday = weekday(now);
 
@@ -280,6 +281,7 @@ pub fn remaining_week(
 
 pub fn end_of_week(
     data: &Vec<JsonObject>,
+    currency_rates: &HashMap<i32, Decimal>,
     now: &DateTime<Local>,
     daily_rate: Decimal,
     payday: u32,
@@ -288,7 +290,7 @@ pub fn end_of_week(
 ) -> Decimal {
     //If friday was today, this is what the total would be
     //Add back in the weekday savings and the fridays daily rate
-    let mut amount = calculate(data, now, daily_rate, payday, weekday_saving, calc_to_eom);
+    let mut amount = calculate(data, currency_rates, now, daily_rate, payday, weekday_saving, calc_to_eom);
 
     let weekday = weekday(now);
 
@@ -311,6 +313,7 @@ fn weekday(time: &DateTime<Local>) -> Decimal {
 
 pub fn full_weekend(
     data: &Vec<JsonObject>,
+    currency_rates: &HashMap<i32, Decimal>,
     now: &DateTime<Local>,
     daily_rate: Decimal,
     payday: u32,
@@ -320,7 +323,7 @@ pub fn full_weekend(
     // I have no idea what this does
     // TODO: investigate
     // Takes off the difference between the daily rate and the weekday savings between now and the weekend?
-    let mut amount = remaining_week(data, now, daily_rate, payday, weekday_saving, calc_to_eom);
+    let mut amount = remaining_week(data, currency_rates, now, daily_rate, payday, weekday_saving, calc_to_eom);
 
     let weekday = weekday(now);
 

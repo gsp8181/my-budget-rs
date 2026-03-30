@@ -38,6 +38,7 @@ pub struct JsonObject {
     pub amount: Decimal,
     pub cardid: Option<i32>,
     pub dbName: Db_Name,
+    pub currency_id: Option<i32>,
 }
 
 #[allow(non_snake_case)]
@@ -56,6 +57,7 @@ pub struct DatabaseObject {
     pub amount: String,
     pub cardid: Option<i32>,
     pub dbName: Db_Name,
+    pub currency_id: Option<i32>,
 }
 
 diesel::table! {
@@ -71,7 +73,8 @@ diesel::table! {
         day -> Nullable<Integer>,
         amount -> Text,
         cardid -> Nullable<Integer>,
-        dbName -> Text
+        dbName -> Text,
+        currency_id -> Nullable<Integer>,
     }
 }
 
@@ -82,6 +85,7 @@ pub struct JsonEntryObject {
     pub day: Option<String>,
     pub amount: Option<Decimal>,
     pub cardid: Option<i32>,
+    pub currency_id: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromSqlRow, AsExpression)]
@@ -168,6 +172,7 @@ impl From<DatabaseObject> for JsonObject {
             day: object.day,
             cardid: object.cardid,
             dbName: object.dbName,
+            currency_id: object.currency_id,
         }
     }
 }
