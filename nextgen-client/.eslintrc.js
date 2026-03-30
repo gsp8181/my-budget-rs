@@ -8,7 +8,10 @@ module.exports = {
       'import'
     ],
     rules: {
-      'import/prefer-default-export': 'off'
+      'import/prefer-default-export': 'off',
+      // MUI v6 sub-path exports and some peer deps aren't resolvable by the
+      // static ESLint import resolver; the webpack bundler handles them fine.
+      'import/no-unresolved': ['error', { ignore: ['^@mui/', '^@react-spring/'] }]
     },
     settings: {
       'import/resolver': {

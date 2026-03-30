@@ -1,5 +1,5 @@
 [debug]
-address = "192.168.1.4"
+address = "0.0.0.0"
 port = 5540
 
 [release]

@@ -1,10 +1,20 @@
+# Build frontend (nextgen-client) to produce static `build/` output
+FROM node:18 AS node-build
+WORKDIR /app
+COPY nextgen-client/package*.json ./nextgen-client/
+ENV NODE_ENV=production
+RUN cd nextgen-client && npm ci --omit=dev --silent
+COPY nextgen-client ./nextgen-client
+RUN cd nextgen-client && npm run build
+
+# Build Rust binary (musl)
 FROM clux/muslrust:stable AS build
 
 # create a new empty shell project
 RUN USER=root cargo new --bin my-budget
 WORKDIR /my-budget
 
-# copy over your manifests
+# copy over your manifests and sources
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
 COPY ./src ./src
@@ -13,8 +23,10 @@ COPY ./migrations ./migrations
 RUN cargo build --release
 
 COPY ./Rocket.toml .
-COPY ./wwwroot ./wwwroot
+# copy frontend build output from node-build stage into wwwroot
+COPY --from=node-build /app/nextgen-client/build ./wwwroot
 
+# copy the compiled binary out of the target directory
 #RUN cp $(find target/* -type d -not -name 'release' -print -quit)/release/my-budget my-budget
 RUN cp $(for i in $(ls -d target/*/); do echo ${i%%/}; done | grep linux)/release/my-budget my-budget
 

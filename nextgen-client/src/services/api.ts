@@ -1,3 +1,5 @@
+import API_BASE from '../config';
+
 export interface DashboardData {
     amount: string;
     remaining_week: string;
@@ -24,7 +26,7 @@ interface Transaction {
 }
 
 export async function fetchDashboardData(): Promise<DashboardData> {
-    const response = await fetch('https://budget.gsp8181.co.uk/api');
+    const response = await fetch(`${API_BASE}/api`);
     if (!response.ok) {
         throw new Error('Failed to fetch dashboard data');
     }

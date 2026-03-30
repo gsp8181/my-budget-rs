@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { useEffect, useState } from 'react';
+import API_BASE from '../../config';
 import PropTypes from 'prop-types';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
@@ -14,6 +16,28 @@ import MenuContent from './MenuContent';
 import CardAlert from './CardAlert';
 
 function SideMenuMobile({ open, toggleDrawer }) {
+  const [user, setUser] = useState({ username: 'Loading...', email: 'Loading...' });
+
+  React.useEffect(() => {
+    let mounted = true;
+    const url = `${API_BASE.replace(/\/$/, '')}/api/me`;
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error('network response was not ok');
+        return res.json();
+      })
+      .then((data) => {
+        if (mounted && data) {
+          setUser({ username: data.username || user.username, email: data.email || user.email });
+        }
+      })
+      .catch(() => {
+        // keep defaults on error
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <Drawer
       anchor="right"
@@ -40,12 +64,12 @@ function SideMenuMobile({ open, toggleDrawer }) {
           >
             <Avatar
               sizes="small"
-              alt="Riley Carter"
+              alt={user.username}
               src="/static/images/avatar/7.jpg"
               sx={{ width: 24, height: 24 }}
             />
             <Typography component="p" variant="h6">
-              Riley Carter
+              {user.username}
             </Typography>
           </Stack>
           <MenuButton showBadge>

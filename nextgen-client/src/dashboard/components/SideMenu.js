@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { useEffect, useState } from 'react';
+import API_BASE from '../../config';
 import { styled } from '@mui/material/styles';
 import Avatar from '@mui/material/Avatar';
 import MuiDrawer, { drawerClasses } from '@mui/material/Drawer';
@@ -25,6 +27,28 @@ const Drawer = styled(MuiDrawer)({
 });
 
 export default function SideMenu() {
+  const [user, setUser] = useState({ username: 'Loading...', email: 'Loading...' });
+
+  useEffect(() => {
+    let mounted = true;
+    const url = `${API_BASE.replace(/\/$/, '')}/api/me`;
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error('network response was not ok');
+        return res.json();
+      })
+      .then((data) => {
+        if (mounted && data) {
+          setUser({ username: data.username || user.username, email: data.email || user.email });
+        }
+      })
+      .catch(() => {
+        /* ignore errors, keep defaults */
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
   return (
     <Drawer
       variant="permanent"
@@ -63,10 +87,10 @@ export default function SideMenu() {
         />
         <Box sx={{ mr: 'auto' }}>
           <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: '16px' }}>
-            Riley Carter
+            {user.username}
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            riley@email.com
+            {user.email}
           </Typography>
         </Box>
         <OptionsMenu />
