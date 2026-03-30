@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use chrono::Local;
 use rocket::{fairing::AdHoc, serde::json::Json};
+use rocket::serde::Serialize;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 
@@ -97,8 +98,25 @@ async fn index(db: Db) -> Json<PublicItem> {
     Json(test_data(db).await)
 }
 
+#[derive(Serialize)]
+#[serde(crate = "rocket::serde")]
+struct UserInfo {
+    username: String,
+    email: String,
+}
+
+#[get("/me")]
+async fn me() -> Json<UserInfo> {
+    // Stubbed values for now
+    let info = UserInfo {
+        username: String::from("gsp8181"),
+        email: String::from("gsp8181@github"),
+    };
+    Json(info)
+}
+
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("API Stage", |rocket| async {
-        rocket.mount("/api", routes![index])
+        rocket.mount("/api", routes![index, me])
     })
 }
