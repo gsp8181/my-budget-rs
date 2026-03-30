@@ -4,6 +4,20 @@ use rust_decimal_macros::dec;
 
 use crate::models::item::{Category, Db_Name, JsonObject};
 
+fn apply_currency_conversion(item: &mut JsonObject) {
+    if item.name.starts_with("CUR:") {
+        let parts: Vec<&str> = item.name.splitn(3, ' ').collect();
+        if parts.len() >= 1 { //was 2
+            let rate_str = &parts[0][4..]; // Remove "CUR:" prefix
+            if let Ok(rate) = rate_str.parse::<f64>() {
+                if let Some(rate_decimal) = Decimal::from_f64(rate) {
+                    item.amount = item.amount / rate_decimal;
+                }
+            }
+        }
+    }
+}
+
 pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonObject> {
     let mut results: Vec<JsonObject> = Vec::new();
 
@@ -27,6 +41,7 @@ pub fn get_items_today(data: &[JsonObject], now: &DateTime<Local>) -> Vec<JsonOb
         .filter(|x| dates.contains(&x.day.unwrap()))
         .cloned()
         .for_each(|mut x| {
+            apply_currency_conversion(&mut x);
             if let Db_Name::debit = x.dbName {
                 x.amount = -x.amount;
             }
@@ -57,7 +72,8 @@ pub fn net_saved_avg(data: &[JsonObject], daily_rate: Decimal, total_pay: Decima
 
 pub fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
     let mut amount = dec!(0);
-    for bank_obj in data {
+    for mut bank_obj in data.iter().cloned() {
+        apply_currency_conversion(&mut bank_obj);
         if let JsonObject {
             dbName: Db_Name::credit,
             category: Category::creditcard,
@@ -72,7 +88,8 @@ pub fn sum_of_card_held(data: &[JsonObject]) -> Decimal {
 
 pub fn sum_of_credits(data: &[JsonObject], total_pay: Decimal) -> Decimal {
     let mut amount = dec!(0);
-    for bank_obj in data {
+    for mut bank_obj in data.iter().cloned() {
+        apply_currency_conversion(&mut bank_obj);
         if let JsonObject {
             dbName: Db_Name::credit,
             day: Some(_),
@@ -87,7 +104,8 @@ pub fn sum_of_credits(data: &[JsonObject], total_pay: Decimal) -> Decimal {
 
 pub fn sum_of_debits(data: &[JsonObject]) -> Decimal {
     let mut amount = dec!(0);
-    for bank_obj in data {
+    for mut bank_obj in data.iter().cloned() {
+        apply_currency_conversion(&mut bank_obj);
         match bank_obj {
             JsonObject {
                 category: Category::creditcard,
@@ -166,13 +184,15 @@ pub fn calculate(
         amount -= weekday_saving * (weekday); //TODO: weekday
     }
 
-    for bank_obj in data {
+    for bank_obj in data.iter().cloned() {
+        let mut bank_obj = bank_obj;
+        apply_currency_conversion(&mut bank_obj);
         match bank_obj {
             JsonObject {
                 dbName: Db_Name::credit,
                 ..
             } => {
-                if can_be_used_in_calculation(bank_obj, now, &next_payday, after_payday) {
+                if can_be_used_in_calculation(&bank_obj, now, &next_payday, after_payday) {
                     amount += bank_obj.amount;
                 }
             }
@@ -180,10 +200,11 @@ pub fn calculate(
                 dbName: Db_Name::debit,
                 ..
             } => {
-                if can_be_used_in_calculation(bank_obj, now, &next_payday, after_payday) {
+                if can_be_used_in_calculation(&bank_obj, now, &next_payday, after_payday) {
                     amount -= bank_obj.amount;
                 }
             }
+            _ => (),
         }
     }
     amount
