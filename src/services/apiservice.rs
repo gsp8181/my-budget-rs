@@ -7,7 +7,7 @@ use crate::models::item::{Category, Db_Name, JsonObject};
 
 /// Converts an item's amount to GBP using the currency rate map.
 /// Rate of 1 (GBP) means no conversion. Rate of e.g. 0.77 means amount / 0.77.
-fn apply_currency_conversion(item: &mut JsonObject, currency_rates: &HashMap<i32, Decimal>) {
+pub fn apply_currency_conversion(item: &mut JsonObject, currency_rates: &HashMap<i32, Decimal>) {
     if let Some(cid) = item.currency_id {
         if let Some(&rate) = currency_rates.get(&cid) {
             if rate != dec!(0) && rate != dec!(1) {

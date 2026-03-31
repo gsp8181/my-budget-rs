@@ -197,7 +197,7 @@ export default function CurrenciesSection() {
         </TableBody>
       </Table>
       <Typography variant="caption" color="text.secondary">
-        Rate is how many units of this currency equal £1 (e.g. Euro ≈ 0.86 means £1 = €0.86 → rate = 0.86). British Pound (rate 1) is always present and cannot be removed.
+        Rate is how many units of this currency equal £1 (e.g. Euro ≈ 1.28 means £1 = €1.28 → rate = 1.28). British Pound (rate 1) is always present and cannot be removed.
       </Typography>
     </Box>
   );

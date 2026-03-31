@@ -601,6 +601,63 @@ fn check_static_totals() {
     assert_eq!(dec!(1529.81), amount);
 }
 
+#[test]
+fn check_currency_conversion() {
+    use crate::services::apiservice::apply_currency_conversion;
+
+    // The SQL migration inverts the old CUR:fraction value (e.g. CUR:0.77 → rate ≈ 1.2987)
+    // so that old items are correctly converted when divided by the new rate.
+
+    let mut rates = HashMap::new();
+    rates.insert(2, dec!(0.77)); // foreign currency: 0.77 units = £1
+
+    // Item in the foreign currency: 77 units -> should convert to £100
+    let mut item = JsonObject {
+        id: Some(1),
+        oldId: None,
+        category: Category::bank,
+        name: String::from("test"),
+        day: None,
+        amount: dec!(77),
+        cardid: None,
+        dbName: Db_Name::credit,
+        currency_id: Some(2),
+    };
+    apply_currency_conversion(&mut item, &rates);
+    assert_eq!(dec!(100), item.amount);
+
+    // GBP (rate 1) — no conversion applied
+    rates.insert(1, dec!(1));
+    let mut gbp_item = JsonObject {
+        id: Some(2),
+        oldId: None,
+        category: Category::bank,
+        name: String::from("gbp"),
+        day: None,
+        amount: dec!(50),
+        cardid: None,
+        dbName: Db_Name::credit,
+        currency_id: Some(1),
+    };
+    apply_currency_conversion(&mut gbp_item, &rates);
+    assert_eq!(dec!(50), gbp_item.amount);
+
+    // No currency_id — untouched
+    let mut no_cur = JsonObject {
+        id: Some(3),
+        oldId: None,
+        category: Category::cash,
+        name: String::from("no_cur"),
+        day: None,
+        amount: dec!(200),
+        cardid: None,
+        dbName: Db_Name::credit,
+        currency_id: None,
+    };
+    apply_currency_conversion(&mut no_cur, &rates);
+    assert_eq!(dec!(200), no_cur.amount);
+}
+
 fn get_local_date(dt_str: &str) -> DateTime<Local> {
     
     Local

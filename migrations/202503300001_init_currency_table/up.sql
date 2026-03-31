@@ -35,42 +35,38 @@ FROM "_item_old";
 DROP TABLE "_item_old";
 
 -- Migrate old "CUR:rate [name]" items into proper currency rows and update references.
--- Extract the rate string: everything between "CUR:" (pos 5) and the first space, or end of string.
+-- Extract the rate string from CUR: prefixed items and insert currencies.
+-- The old CUR:rate value was a fraction (e.g. 0.77), used as: amount / 0.77.
+-- The new rate column stores "foreign units per £1"
+WITH extracted AS (
+    SELECT DISTINCT
+        CASE
+            WHEN INSTR(SUBSTR("name", 5), ' ') > 0
+            THEN SUBSTR("name", 5, INSTR(SUBSTR("name", 5), ' ') - 1)
+            ELSE SUBSTR("name", 5)
+        END AS old_rate_str
+    FROM "item"
+    WHERE "name" LIKE 'CUR:%'
+)
 INSERT OR IGNORE INTO "currency" ("rate", "symbol", "name")
-SELECT DISTINCT
-    CASE
-        WHEN INSTR(SUBSTR("name", 5), ' ') > 0
-        THEN SUBSTR("name", 5, INSTR(SUBSTR("name", 5), ' ') - 1)
-        ELSE SUBSTR("name", 5)
-    END,
-    'CUR_' || REPLACE(
-        CASE
-            WHEN INSTR(SUBSTR("name", 5), ' ') > 0
-            THEN SUBSTR("name", 5, INSTR(SUBSTR("name", 5), ' ') - 1)
-            ELSE SUBSTR("name", 5)
-        END,
-    '.', '_'),
-    'Currency (rate ' ||
-        CASE
-            WHEN INSTR(SUBSTR("name", 5), ' ') > 0
-            THEN SUBSTR("name", 5, INSTR(SUBSTR("name", 5), ' ') - 1)
-            ELSE SUBSTR("name", 5)
-        END
-    || ')'
-FROM "item"
-WHERE "name" LIKE 'CUR:%';
+SELECT
+    CAST(1.0 / CAST(old_rate_str AS REAL) AS TEXT),
+    'CUR_' || REPLACE(old_rate_str, '.', '_'),
+    'Currency (rate ' || old_rate_str || ')'
+FROM extracted;
 
--- Update items: link to the right currency and strip the "CUR:rate " prefix from name.
+-- Update items: link to the matching currency (matched by inverted rate) and strip the CUR: prefix.
 UPDATE "item"
 SET
     "currency_id" = (
-        SELECT "id" FROM "currency"
-        WHERE "rate" =
+        SELECT c."id" FROM "currency" c
+        WHERE CAST(c."rate" AS REAL) = CAST(1.0 / CAST(
             CASE
                 WHEN INSTR(SUBSTR("item"."name", 5), ' ') > 0
                 THEN SUBSTR("item"."name", 5, INSTR(SUBSTR("item"."name", 5), ' ') - 1)
                 ELSE SUBSTR("item"."name", 5)
             END
+        AS REAL) AS REAL)
         LIMIT 1
     ),
     "name" = CASE
