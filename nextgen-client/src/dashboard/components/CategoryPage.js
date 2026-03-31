@@ -121,19 +121,25 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
     if (e.key === 'Enter') handleAdd();
   };
 
-  // Custom edit cell for currency_id — a select rendered inside the DataGrid cell.
+  // True when any row is in edit mode — used to show the currency column only while editing.
+  const isAnyEditing = useMemo(
+    () => Object.values(rowModesModel).some(m => m.mode === GridRowModes.Edit),
+    [rowModesModel]
+  );
+
+  // Custom edit cell for currency_id — compact select showing only the symbol.
   const CurrencyEditCell = useCallback((params) => {
     return (
       <Select
         value={params.value ?? ''}
         onChange={(e) => params.api.setEditCellValue({ id: params.id, field: 'currency_id', value: e.target.value })}
         size="small"
-        fullWidth
         variant="standard"
         disableUnderline
+        sx={{ width: '100%' }}
       >
         {(currencies || []).map(c => (
-          <MenuItem key={c.id} value={c.id}>{c.symbol} — {c.name}</MenuItem>
+          <MenuItem key={c.id} value={c.id}>{c.symbol}</MenuItem>
         ))}
       </Select>
     );
@@ -159,8 +165,8 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
 
     const currencyCol = {
       field: 'currency_id',
-      headerName: 'Currency',
-      width: 110,
+      headerName: 'Curr',
+      width: 60,
       editable: true,
       renderCell: (params) => {
         const currency = currencyMap[params.value];
@@ -260,6 +266,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
           editMode="row"
           rows={filteredRows}
           columns={columns}
+          columnVisibilityModel={{ currency_id: isAnyEditing }}
           rowModesModel={rowModesModel}
           onRowModesModelChange={setRowModesModel}
           onCellClick={handleCellClick}

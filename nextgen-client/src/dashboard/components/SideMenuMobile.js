@@ -78,7 +78,7 @@ function SideMenuMobile({ open, toggleDrawer }) {
         </Stack>
         <Divider />
         <Stack sx={{ flexGrow: 1 }}>
-          <MenuContent />
+          <MenuContent onNavigate={toggleDrawer(false)} />
           <Divider />
         </Stack>
         <CardAlert />

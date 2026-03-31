@@ -46,7 +46,7 @@ const secondaryListItems = [
   { text: 'Settings', icon: <SettingsRoundedIcon />, path: '/settings' },
 ];
 
-export default function MenuContent() {
+export default function MenuContent({ onNavigate }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -55,7 +55,7 @@ export default function MenuContent() {
 
   const renderItem = (item) => (
     <ListItem key={item.path} disablePadding sx={{ display: 'block' }}>
-      <ListItemButton selected={isSelected(item.path)} onClick={() => navigate(item.path)}>
+      <ListItemButton selected={isSelected(item.path)} onClick={() => { navigate(item.path); onNavigate?.(); }}>
         <ListItemIcon>{item.icon}</ListItemIcon>
         <ListItemText primary={item.text} />
       </ListItemButton>

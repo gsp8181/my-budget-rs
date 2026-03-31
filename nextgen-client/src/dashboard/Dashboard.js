@@ -30,7 +30,7 @@ const xThemeComponents = {
 
 const currencyField = { name: 'currency_id', label: 'Currency', type: 'currency' };
 
-const amountCol = { field: 'amount', headerName: 'Amount', width: 150 };
+const amountCol = { field: 'amount', headerName: 'Amount', width: 90 };
 
 const categoryRoutes = [
   {
@@ -254,7 +254,7 @@ export default function Dashboard(props) {
               spacing={2}
               sx={{
                 alignItems: 'center',
-                mx: 3,
+                mx: { xs: 0, md: 3 },
                 pb: 5,
                 mt: { xs: 8, md: 0 },
               }}
