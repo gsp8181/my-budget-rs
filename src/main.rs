@@ -74,9 +74,14 @@ async fn main() {
 
     let app = build_app(pool);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:5540")
+    // Bind to different ports depending on build type:
+    // - debug builds: 5540 (developer convenience)
+    // - release builds: 8000 (production-like default)
+    let port: u16 = if cfg!(debug_assertions) { 5540 } else { 8000 };
+    let addr = format!("0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(&addr)
         .await
-        .expect("Failed to bind");
+        .unwrap_or_else(|e| panic!("Failed to bind {}: {}", addr, e));
     println!("Listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.expect("Server error");
 }

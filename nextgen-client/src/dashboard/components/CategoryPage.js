@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';
@@ -19,7 +20,7 @@ import InputLabel from '@mui/material/InputLabel';
 import Alert from '@mui/material/Alert';
 import API_BASE from '../../config';
 
-export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFormValues, formFields, currencies }) {
+export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFormValues, formFields, currencies, cards }) {
   const [rows, setRows] = useState([]);
   const [rowModesModel, setRowModesModel] = useState({});
   const [loading, setLoading] = useState(true);
@@ -27,6 +28,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
   const [addOpen, setAddOpen] = useState(false);
   const [formValues, setFormValues] = useState(defaultFormValues);
   const [currencyFilter, setCurrencyFilter] = useState('all');
+  const [deleteId, setDeleteId] = useState(null);
 
   // Build a map of id -> currency for fast lookup
   const currencyMap = useMemo(() => {
@@ -34,6 +36,13 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
     (currencies || []).forEach(c => { map[c.id] = c; });
     return map;
   }, [currencies]);
+
+  // Build a map of id -> card for fast lookup
+  const cardMap = useMemo(() => {
+    const map = {};
+    (cards || []).forEach(c => { map[c.id] = c; });
+    return map;
+  }, [cards]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -54,10 +63,21 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
 
   const handleCellClick = useCallback((params) => {
     if (params.field === 'actions') return;
-    setRowModesModel((prev) => ({
-      ...prev,
-      [params.id]: { mode: GridRowModes.Edit, fieldToFocus: params.field },
-    }));
+    // flushSync makes the state update (and the re-render that creates the input element)
+    // happen synchronously, still within the original touch/click event handler.
+    // This keeps us inside the browser's user-gesture window so the mobile
+    // keyboard opens immediately without needing a second tap.
+    flushSync(() => {
+      setRowModesModel((prev) => ({
+        ...prev,
+        [params.id]: { mode: GridRowModes.Edit, fieldToFocus: params.field },
+      }));
+    });
+    const input = document.querySelector(
+      `[data-id="${params.id}"] [data-field="${params.field}"] input,` +
+      `[data-id="${params.id}"] [data-field="${params.field}"] textarea`
+    );
+    if (input) input.focus();
   }, []);
 
   const handleSave = useCallback((id) => {
@@ -98,6 +118,8 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
       setRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e) {
       setError(e.message);
+    } finally {
+      setDeleteId(null);
     }
   }, [apiPath]);
 
@@ -145,22 +167,53 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
     );
   }, [currencies]);
 
+  // Custom edit cell for cardid.
+  const CardEditCell = useCallback((params) => {
+    return (
+      <Select
+        value={params.value ?? ''}
+        onChange={(e) => params.api.setEditCellValue({ id: params.id, field: 'cardid', value: e.target.value })}
+        size="small"
+        variant="standard"
+        disableUnderline
+        sx={{ width: '100%' }}
+      >
+        {(cards || []).map(c => (
+          <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+        ))}
+      </Select>
+    );
+  }, [cards]);
+
   // Transform columnDefs: replace valueFormatter on 'amount' with a renderCell
   // that prepends the correct currency symbol from the row's currency_id.
   // Also inject an editable Currency column.
   const enhancedColumnDefs = useMemo(() => {
     const base = columnDefs.map((col) => {
-      if (col.field !== 'amount') return { ...col, editable: true };
-      return {
-        ...col,
-        editable: true,
-        valueFormatter: undefined,
-        renderCell: (params) => {
-          const currency = currencyMap[params.row.currency_id];
-          const symbol = currency ? currency.symbol : '£';
-          return `${symbol}${params.value}`;
-        },
-      };
+      if (col.field === 'amount') {
+        return {
+          ...col,
+          editable: true,
+          valueFormatter: undefined,
+          renderCell: (params) => {
+            const currency = currencyMap[params.row.currency_id];
+            const symbol = currency ? currency.symbol : '£';
+            return `${symbol}${params.value}`;
+          },
+        };
+      }
+      if (col.isCard) {
+        return {
+          ...col,
+          editable: true,
+          renderCell: (params) => {
+            const card = cardMap[params.value];
+            return card ? card.name : params.value;
+          },
+          renderEditCell: CardEditCell,
+        };
+      }
+      return { ...col, editable: true };
     });
 
     const currencyCol = {
@@ -176,7 +229,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
     };
 
     return [...base, currencyCol];
-  }, [columnDefs, currencyMap, CurrencyEditCell]);
+  }, [columnDefs, currencyMap, cardMap, CurrencyEditCell, CardEditCell]);
 
   const columns = [
     ...enhancedColumnDefs,
@@ -211,7 +264,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
             key="delete"
             icon={<DeleteIcon />}
             label="Delete"
-            onClick={() => handleDelete(id)}
+            onClick={() => setDeleteId(id)}
             color="error"
           />,
         ];
@@ -261,44 +314,67 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
           <CircularProgress />
         </Box>
       ) : (
-        <DataGrid
-          autoHeight
-          editMode="row"
-          rows={filteredRows}
-          columns={columns}
-          columnVisibilityModel={{ currency_id: isAnyEditing }}
-          rowModesModel={rowModesModel}
-          onRowModesModelChange={setRowModesModel}
-          onCellClick={handleCellClick}
-          processRowUpdate={processRowUpdate}
-          onProcessRowUpdateError={(e) => setError(e.message)}
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
-          density="compact"
-          disableColumnResize
-          isCellEditable={() => true}
-        />
+        <Box sx={{ width: '100%', overflowX: 'auto' }}>
+          <DataGrid
+            autoHeight
+            editMode="row"
+            rows={filteredRows}
+            columns={columns}
+            columnVisibilityModel={{ currency_id: isAnyEditing }}
+            rowModesModel={rowModesModel}
+            onRowModesModelChange={setRowModesModel}
+            onCellClick={handleCellClick}
+            processRowUpdate={processRowUpdate}
+            onProcessRowUpdateError={(e) => setError(e.message)}
+            pageSizeOptions={[10, 25, 50]}
+            initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+            density="compact"
+            disableColumnResize
+            isCellEditable={() => true}
+          />
+        </Box>
       )}
       <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add {pageName}</DialogTitle>
         <DialogContent>
-          {formFields.map((field, idx) => (
-            field.type === 'currency' ? (
-              <TextField
-                key={field.name}
-                select
-                label={field.label || 'Currency'}
-                value={formValues[field.name] ?? ''}
-                onChange={e => setFormValues(prev => ({ ...prev, [field.name]: e.target.value }))}
-                fullWidth
-                margin="normal"
-                autoFocus={idx === 0}
-              >
-                {(currencies || []).map(c => (
-                  <MenuItem key={c.id} value={c.id}>{c.symbol} — {c.name}</MenuItem>
-                ))}
-              </TextField>
-            ) : (
+          {formFields.map((field, idx) => {
+            if (field.type === 'currency') {
+              return (
+                <TextField
+                  key={field.name}
+                  select
+                  label={field.label || 'Currency'}
+                  value={formValues[field.name] ?? ''}
+                  onChange={e => setFormValues(prev => ({ ...prev, [field.name]: e.target.value }))}
+                  fullWidth
+                  margin="normal"
+                  autoFocus={idx === 0}
+                >
+                  {(currencies || []).map(c => (
+                    <MenuItem key={c.id} value={c.id}>{c.symbol} — {c.name}</MenuItem>
+                  ))}
+                </TextField>
+              );
+            }
+            if (field.type === 'card') {
+              return (
+                <TextField
+                  key={field.name}
+                  select
+                  label={field.label || 'Card'}
+                  value={formValues[field.name] ?? ''}
+                  onChange={e => setFormValues(prev => ({ ...prev, [field.name]: e.target.value }))}
+                  fullWidth
+                  margin="normal"
+                  autoFocus={idx === 0}
+                >
+                  {(cards || []).map(c => (
+                    <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                  ))}
+                </TextField>
+              );
+            }
+            return (
               <TextField
                 key={field.name}
                 label={field.label}
@@ -312,12 +388,21 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
                 placeholder={field.placeholder}
                 autoFocus={idx === 0}
               />
-            )
-          ))}
+            );
+          })}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAddOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleAdd}>Add</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={deleteId !== null} onClose={() => setDeleteId(null)}>
+        <DialogTitle>Delete item?</DialogTitle>
+        <DialogContent>This cannot be undone.</DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteId(null)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={() => handleDelete(deleteId)}>Delete</Button>
         </DialogActions>
       </Dialog>
     </Box>

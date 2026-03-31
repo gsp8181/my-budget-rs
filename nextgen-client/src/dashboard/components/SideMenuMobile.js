@@ -77,11 +77,10 @@ function SideMenuMobile({ open, toggleDrawer }) {
           </MenuButton>
         </Stack>
         <Divider />
-        <Stack sx={{ flexGrow: 1 }}>
+        <Stack sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
           <MenuContent onNavigate={toggleDrawer(false)} />
           <Divider />
         </Stack>
-        <CardAlert />
         <Stack sx={{ p: 2 }}>
           <Button variant="outlined" fullWidth startIcon={<LogoutRoundedIcon />}>
             Logout

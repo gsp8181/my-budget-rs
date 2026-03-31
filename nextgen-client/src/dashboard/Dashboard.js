@@ -31,6 +31,8 @@ const xThemeComponents = {
 const currencyField = { name: 'currency_id', label: 'Currency', type: 'currency' };
 
 const amountCol = { field: 'amount', headerName: 'Amount', width: 90 };
+const cardCol = { field: 'cardid', headerName: 'Card', width: 100, isCard: true };
+const dayCol = (label = 'Day') => ({ field: 'day', headerName: label, width: 55 });
 
 const categoryRoutes = [
   {
@@ -71,9 +73,9 @@ const categoryRoutes = [
     apiPath: 'regularcredit',
     itemName: 'Regular Credit',
     columnDefs: [
-      { field: 'name', headerName: 'Creditor', flex: 1 },
+      { field: 'name', headerName: 'Creditor', flex: 1, minWidth: 100 },
       amountCol,
-      { field: 'day', headerName: 'Day', width: 100 },
+      dayCol(),
     ],
     defaultFormValues: { name: '', amount: '', day: '', currency_id: '' },
     formFields: [
@@ -88,16 +90,17 @@ const categoryRoutes = [
     pageName: 'Card Items Held Off Balance',
     apiPath: 'cardheld',
     itemName: 'Card Item',
+    useCards: true,
     columnDefs: [
-      { field: 'name', headerName: 'Item', flex: 1 },
+      { field: 'name', headerName: 'Item', flex: 1, minWidth: 100 },
       amountCol,
-      { field: 'cardid', headerName: 'Card Used', width: 120 },
+      cardCol,
     ],
     defaultFormValues: { name: '', amount: '', cardid: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Item', placeholder: 'Business Expense' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
-      { name: 'cardid', label: 'Card ID', type: 'number' },
+      { name: 'cardid', label: 'Card Used', type: 'card' },
       currencyField,
     ],
   },
@@ -106,23 +109,24 @@ const categoryRoutes = [
     pageName: 'Uncleared Items',
     apiPath: 'uncleared',
     itemName: 'Uncleared Item',
+    useCards: true,
     columnDefs: [
-      { field: 'name', headerName: 'Item', flex: 1 },
+      { field: 'name', headerName: 'Item', flex: 1, minWidth: 100 },
       amountCol,
-      { field: 'cardid', headerName: 'Card Used', width: 120 },
+      cardCol,
     ],
     defaultFormValues: { name: '', amount: '', cardid: '', currency_id: '' },
     formFields: [
       { name: 'name', label: 'Item', placeholder: 'Offline Card Payment' },
       { name: 'amount', label: 'Amount', type: 'number', inputProps: { step: '0.01' } },
-      { name: 'cardid', label: 'Card ID', type: 'number' },
+      { name: 'cardid', label: 'Card Used', type: 'card' },
       currencyField,
     ],
   },
   {
-    path: '/debtto',
+    path: '/debt',
     pageName: 'Debt Owed To Me',
-    apiPath: 'debtto',
+    apiPath: 'debt',
     itemName: 'Debt',
     columnDefs: [
       { field: 'name', headerName: 'Debtee', flex: 1 },
@@ -173,9 +177,9 @@ const categoryRoutes = [
     apiPath: 'regularpayment',
     itemName: 'Regular Payment',
     columnDefs: [
-      { field: 'name', headerName: 'Description', flex: 1 },
+      { field: 'name', headerName: 'Description', flex: 1, minWidth: 100 },
       amountCol,
-      { field: 'day', headerName: 'Day Taken', width: 120 },
+      dayCol('Day Taken'),
     ],
     defaultFormValues: { name: '', amount: '', day: '', currency_id: '' },
     formFields: [
@@ -186,9 +190,9 @@ const categoryRoutes = [
     ],
   },
   {
-    path: '/debt',
+    path: '/debtto',
     pageName: 'Debt I Owe',
-    apiPath: 'debt',
+    apiPath: 'debtto',
     itemName: 'Debt',
     columnDefs: [
       { field: 'name', headerName: 'Debtor', flex: 1 },
@@ -221,11 +225,16 @@ const categoryRoutes = [
 
 export default function Dashboard(props) {
   const [currencies, setCurrencies] = useState([]);
+  const [cards, setCards] = useState([]);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/currency`)
       .then(r => r.ok ? r.json() : [])
       .then(data => setCurrencies(data))
+      .catch(() => {});
+    fetch(`${API_BASE}/api/cardbalance`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setCards(data))
       .catch(() => {});
   }, []);
 
@@ -236,7 +245,7 @@ export default function Dashboard(props) {
     <AppTheme {...props} themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
       <Router>
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex', height: '100dvh', overflow: 'hidden' }}>
           <SideMenu />
           <AppNavbar />
           {/* Main content */}
@@ -244,10 +253,11 @@ export default function Dashboard(props) {
             component="main"
             sx={(theme) => ({
               flexGrow: 1,
+              height: '100%',
               backgroundColor: theme.vars
                 ? `rgba(${theme.vars.palette.background.defaultChannel} / 1)`
                 : alpha(theme.palette.background.default, 1),
-              overflow: 'auto',
+              overflowY: 'auto',
             })}
           >
             <Stack
@@ -266,7 +276,7 @@ export default function Dashboard(props) {
                     <MainGrid />
                   </>
                 } />
-                {categoryRoutes.map(({ path, pageName, apiPath, itemName, columnDefs, defaultFormValues, formFields }) => (
+                {categoryRoutes.map(({ path, pageName, apiPath, itemName, columnDefs, defaultFormValues, formFields, useCards }) => (
                   <Route key={path} path={path} element={
                     <>
                       <Header pageName={pageName} />
@@ -277,6 +287,7 @@ export default function Dashboard(props) {
                         defaultFormValues={{ ...defaultFormValues, currency_id: defaultCurrencyId }}
                         formFields={formFields}
                         currencies={currencies}
+                        cards={useCards ? cards : []}
                       />
                     </>
                   } />

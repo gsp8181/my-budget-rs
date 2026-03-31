@@ -4,7 +4,6 @@ import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import MuiToolbar from '@mui/material/Toolbar';
-import { tabsClasses } from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
@@ -14,18 +13,12 @@ import ColorModeIconDropdown from '../../shared-theme/ColorModeIconDropdown';
 
 const Toolbar = styled(MuiToolbar)({
   width: '100%',
-  padding: '12px',
+  padding: '8px 12px',
   display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'start',
-  justifyContent: 'center',
-  gap: '12px',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
   flexShrink: 0,
-  [`& ${tabsClasses.flexContainer}`]: {
-    gap: '8px',
-    p: '8px',
-    pb: 0,
-  },
 });
 
 export default function AppNavbar() {
@@ -49,31 +42,27 @@ export default function AppNavbar() {
       }}
     >
       <Toolbar variant="regular">
-        <Stack
-          direction="row"
-          sx={{
-            alignItems: 'center',
-            flexGrow: 1,
-            width: '100%',
-            gap: 1,
-          }}
-        >
           <Stack
             direction="row"
             spacing={1}
-            sx={{ justifyContent: 'center', mr: 'auto' }}
+            sx={{ alignItems: 'center', minWidth: 0, overflow: 'hidden', flexShrink: 1 }}
           >
             <CustomIcon />
-            <Typography variant="h4" component="h1" sx={{ color: 'text.primary' }}>
+            <Typography
+              variant="h6"
+              component="h1"
+              sx={{ color: 'text.primary', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+            >
               Budgetting
             </Typography>
           </Stack>
-          <ColorModeIconDropdown data-screenshot="" />
-          <MenuButton aria-label="menu" onClick={toggleDrawer(true)}>
-            <MenuRoundedIcon />
-          </MenuButton>
+          <Stack direction="row" sx={{ alignItems: 'center', gap: 1, flexShrink: 0 }}>
+            <ColorModeIconDropdown data-screenshot="" />
+            <MenuButton aria-label="menu" onClick={toggleDrawer(true)}>
+              <MenuRoundedIcon />
+            </MenuButton>
+          </Stack>
           <SideMenuMobile open={open} toggleDrawer={toggleDrawer} />
-        </Stack>
       </Toolbar>
     </AppBar>
   );
