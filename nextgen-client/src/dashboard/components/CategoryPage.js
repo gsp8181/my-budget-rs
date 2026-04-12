@@ -63,21 +63,10 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
 
   const handleCellClick = useCallback((params) => {
     if (params.field === 'actions') return;
-    // flushSync makes the state update (and the re-render that creates the input element)
-    // happen synchronously, still within the original touch/click event handler.
-    // This keeps us inside the browser's user-gesture window so the mobile
-    // keyboard opens immediately without needing a second tap.
-    flushSync(() => {
-      setRowModesModel((prev) => ({
+       setRowModesModel((prev) => ({
         ...prev,
         [params.id]: { mode: GridRowModes.Edit, fieldToFocus: params.field },
       }));
-    });
-    const input = document.querySelector(
-      `[data-id="${params.id}"] [data-field="${params.field}"] input,` +
-      `[data-id="${params.id}"] [data-field="${params.field}"] textarea`
-    );
-    if (input) input.focus();
   }, []);
 
   const handleSave = useCallback((id) => {

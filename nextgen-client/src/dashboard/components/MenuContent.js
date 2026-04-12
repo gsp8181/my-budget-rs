@@ -31,14 +31,14 @@ const creditItems = [
   { text: 'Regular Credit', icon: <TrendingUpIcon />, path: '/regularcredit' },
   { text: 'Card Items Held', icon: <CreditCardIcon />, path: '/cardheld' },
   { text: 'Uncleared Items', icon: <HourglassEmptyIcon />, path: '/uncleared' },
-  { text: 'Debt Owed To Me', icon: <PeopleRoundedIcon />, path: '/debtto' },
+  { text: 'Debt Owed To Me', icon: <PeopleRoundedIcon />, path: '/debt' },
   { text: 'Misc Credit', icon: <AddCircleOutlineIcon />, path: '/misccredit' },
 ];
 
 const debitItems = [
   { text: 'Card Balance', icon: <CreditCardIcon />, path: '/cardbalance' },
   { text: 'Regular Payment', icon: <PaymentIcon />, path: '/regularpayment' },
-  { text: 'Debt I Owe', icon: <TrendingDownIcon />, path: '/debt' },
+  { text: 'Debt I Owe', icon: <TrendingDownIcon />, path: '/debtto' },
   { text: 'Misc Debit', icon: <RemoveCircleOutlineIcon />, path: '/miscdebit' },
 ];
 

@@ -32,13 +32,18 @@ export default function AppNavbar() {
     <AppBar
       position="fixed"
       sx={{
-        display: { xs: 'auto', md: 'none' },
+        display: { xs: 'flex', md: 'none' },
         boxShadow: 0,
         bgcolor: 'background.paper',
         backgroundImage: 'none',
         borderBottom: '1px solid',
         borderColor: 'divider',
-        top: 'var(--template-frame-height, 0px)',
+        top: 0,
+        left: 0,
+        right: 0,
+        width: '100%',
+        transform: 'none',
+        zIndex: (theme) => theme.zIndex.appBar + 1,
       }}
     >
       <Toolbar variant="regular">
