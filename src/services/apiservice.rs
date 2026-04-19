@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Local, Months, NaiveDate, TimeZone};
+use chrono::{DateTime, Datelike, Days, Local, Months, NaiveDate, TimeZone};
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
@@ -332,6 +332,55 @@ pub fn full_weekend(
     }
 
     amount
+}
+
+pub fn get_items_between(
+    data: &[JsonObject],
+    currency_rates: &HashMap<i32, Decimal>,
+    from: &DateTime<Local>,
+    to: &DateTime<Local>,
+) -> Vec<JsonObject> {
+    let mut results: Vec<JsonObject> = Vec::new();
+
+    let mut current = from.date_naive();
+    let to_date = to.date_naive();
+
+    while current <= to_date {
+        let day = current.day() as i32;
+        let mut dates: Vec<i32> = vec![day];
+
+        if current.day() == 1 {
+            let month = current.month();
+            if month == 10 || month == 5 || month == 7 || month == 12 {
+                dates.push(31);
+            } else if month == 3 {
+                dates.push(31);
+                dates.push(30);
+                if get_days_from_month(current.year(), 2) < 29 {
+                    dates.push(29);
+                }
+            }
+        }
+
+        data.iter()
+            .filter(|x| x.day.is_some())
+            .filter(|x| dates.contains(&x.day.unwrap()))
+            .cloned()
+            .for_each(|mut x| {
+                apply_currency_conversion(&mut x, currency_rates);
+                if let Db_Name::debit = x.dbName {
+                    x.amount = -x.amount;
+                }
+                results.push(x);
+            });
+
+        match current.checked_add_days(Days::new(1)) {
+            Some(next) => current = next,
+            None => break,
+        }
+    }
+
+    results
 }
 
 pub fn get_days_from_month(year: i32, month: u32) -> u32 {

@@ -1,16 +1,19 @@
 use std::str::FromStr;
 
-use axum::{extract::State, Json};
-use chrono::Local;
+use axum::{
+    extract::{Query, State},
+    Json,
+};
+use chrono::{DateTime, Local, NaiveDate, TimeZone};
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     models::item::{JsonObject, PublicItem},
     services::apiservice::{
-        calculate, end_of_week, full_weekend, get_items_today, net_saved_avg, remaining_week,
-        saved_this_year, sum_of_card_held, sum_of_credits, sum_of_debits,
+        calculate, end_of_week, full_weekend, get_items_between, get_items_today, net_saved_avg,
+        remaining_week, saved_this_year, sum_of_card_held, sum_of_credits, sum_of_debits,
     },
     services::{
         currencystore::build_currency_rate_map, itemstore::get_collection,
@@ -19,15 +22,20 @@ use crate::{
     DbPool,
 };
 
-async fn build_public_item(pool: &DbPool) -> PublicItem {
+#[derive(Deserialize)]
+struct ApiQuery {
+    date: Option<String>,
+}
+
+async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) -> PublicItem {
     let data_from_db = get_collection(pool).await;
     let mut results: Vec<JsonObject> = Vec::new();
     for object in data_from_db {
         results.push(JsonObject::from(object));
     }
 
-    //TODO: browsers time??
-    let now = Local::now();
+    let real_now = Local::now();
+    let now = target_date.unwrap_or(real_now);
 
     let currency_rates = build_currency_rate_map(pool).await;
 
@@ -99,12 +107,28 @@ async fn build_public_item(pool: &DbPool) -> PublicItem {
         card_held_total: sum_of_card_held(&results, &currency_rates),
         net_saved_avg: net_saved_avg(&results, &currency_rates, daily_rate, total_pay),
         saved_this_year: saved_this_year(&results, &currency_rates, daily_rate, total_pay),
-        today: get_items_today(&results, &currency_rates, &now),
+        today: if target_date.is_some() {
+            get_items_between(&results, &currency_rates, &real_now, &now)
+        } else {
+            get_items_today(&results, &currency_rates, &now)
+        },
     }
 }
 
-async fn index(State(pool): State<DbPool>) -> Json<PublicItem> {
-    Json(build_public_item(&pool).await)
+async fn index(
+    State(pool): State<DbPool>,
+    Query(params): Query<ApiQuery>,
+) -> Json<PublicItem> {
+    let target_date: Option<DateTime<Local>> = params.date.and_then(|d| {
+        NaiveDate::parse_from_str(&d, "%Y-%m-%d")
+            .ok()
+            .and_then(|nd| {
+                Local
+                    .from_local_datetime(&nd.and_hms_opt(0, 0, 0).unwrap())
+                    .single()
+            })
+    });
+    Json(build_public_item(&pool, target_date).await)
 }
 
 #[derive(Serialize)]
