@@ -64,6 +64,16 @@ async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) 
         panic!("failed to read calc_to_eom setting")
     };
 
+    let calc_following_month_raw =
+        get_setting(pool, String::from("calc_following_month"), String::from("false")).await;
+    let calc_following_month = if calc_following_month_raw == "true" {
+        true
+    } else if calc_following_month_raw == "false" {
+        false
+    } else {
+        panic!("failed to read calc_following_month setting")
+    };
+
     PublicItem {
         amount: calculate(
             &results,
@@ -73,6 +83,7 @@ async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) 
             payday,
             weekday_saving,
             calc_to_eom,
+            calc_following_month,
         ),
         remaining_week: remaining_week(
             &results,
@@ -82,6 +93,7 @@ async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) 
             payday,
             weekday_saving,
             calc_to_eom,
+            calc_following_month,
         ),
         end_of_week: end_of_week(
             &results,
@@ -91,6 +103,7 @@ async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) 
             payday,
             weekday_saving,
             calc_to_eom,
+            calc_following_month,
         ),
         full_weekend: full_weekend(
             &results,
@@ -100,6 +113,7 @@ async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) 
             payday,
             weekday_saving,
             calc_to_eom,
+            calc_following_month,
         ),
         monthly_debits: sum_of_debits(&results, &currency_rates),
         monthly_credits: sum_of_credits(&results, &currency_rates, total_pay),

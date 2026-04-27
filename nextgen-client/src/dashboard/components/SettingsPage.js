@@ -19,6 +19,7 @@ export default function SettingsPage() {
     dailyRate: '',
     pay: '',
     calc_to_eom: false,
+    calc_following_month: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,7 +33,7 @@ export default function SettingsPage() {
         const data = await res.json();
         const mapped = {};
         for (const el of data) {
-          mapped[el.name] = el.name === 'calc_to_eom' ? el.value === 'true' : el.value;
+          mapped[el.name] = (el.name === 'calc_to_eom' || el.name === 'calc_following_month') ? el.value === 'true' : el.value;
         }
         setSettings(prev => ({ ...prev, ...mapped }));
       } catch (e) {
@@ -123,6 +124,20 @@ export default function SettingsPage() {
           />
           <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4 }}>
             If after payday, should the daily rate calculation terminate on the 1st of the end of the month.
+          </Typography>
+        </Box>
+        <Box>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={!!settings.calc_following_month}
+                onChange={e => setSettings(p => ({ ...p, calc_following_month: e.target.checked }))}
+              />
+            }
+            label="Include Payments Beyond Next Payday"
+          />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4 }}>
+            Also count recurring payments or credits that fall after the next payday but within the same month (e.g. paid on the 24th but have a direct debit on the 26th).
           </Typography>
         </Box>
         <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>

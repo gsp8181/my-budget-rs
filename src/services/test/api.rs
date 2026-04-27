@@ -385,7 +385,8 @@ fn check_calculate_date_and_pay() {
             dec!(0),
             25,
             dec!(0),
-            true
+            true,
+            false
         )
     );
 
@@ -395,7 +396,8 @@ fn check_calculate_date_and_pay() {
             dec!(0),
             3,
             dec!(0),
-            true
+            true,
+            false
         )
     );
 
@@ -405,7 +407,8 @@ fn check_calculate_date_and_pay() {
             dec!(0),
             30,
             dec!(0),
-            true
+            true,
+            false
         )
     );
 
@@ -415,7 +418,8 @@ fn check_calculate_date_and_pay() {
             dec!(0),
             3,
             dec!(0),
-            true
+            true,
+            false
         )
     );
     //assert!(dec!(920.31) == api::calculate(&test_data(), &dt, dec!(40), 25, dec!(25)));
@@ -429,7 +433,8 @@ fn check_calculate_dr_ws() {
             dec!(40),
             25,
             dec!(40),
-            true
+            true,
+            false
         )
     );
 
@@ -439,7 +444,8 @@ fn check_calculate_dr_ws() {
             dec!(20),
             25,
             dec!(40),
-            true
+            true,
+            false
         )
     );
 
@@ -449,7 +455,8 @@ fn check_calculate_dr_ws() {
             dec!(0),
             25,
             dec!(40),
-            true
+            true,
+            false
         )
     );
 
@@ -459,7 +466,8 @@ fn check_calculate_dr_ws() {
             dec!(40),
             25,
             dec!(25),
-            true
+            true,
+            false
         )
     );
 
@@ -469,7 +477,8 @@ fn check_calculate_dr_ws() {
             dec!(40),
             25,
             dec!(40),
-            true
+            true,
+            false
         )
     );
 
@@ -479,7 +488,8 @@ fn check_calculate_dr_ws() {
             dec!(40),
             25,
             dec!(50),
-            true
+            true,
+            false
         )
     );
 
@@ -489,7 +499,8 @@ fn check_calculate_dr_ws() {
             dec!(40),
             25,
             dec!(25),
-            true
+            true,
+            false
         )
     );
 
@@ -499,7 +510,8 @@ fn check_calculate_dr_ws() {
             dec!(40),
             25,
             dec!(25),
-            true
+            true,
+            false
         )
     );
 
@@ -509,7 +521,8 @@ fn check_calculate_dr_ws() {
             dec!(40),
             25,
             dec!(50),
-            true
+            true,
+            false
         )
     );
 }
@@ -523,6 +536,7 @@ fn check_calculate_rollover_payday() {
             dec!(40),
             1,
             dec!(40),
+            false,
             false
         )
     );
@@ -533,7 +547,8 @@ fn check_calculate_rollover_payday() {
             dec!(40),
             1,
             dec!(40),
-            true
+            true,
+            false
         )
     );
 
@@ -544,7 +559,8 @@ fn check_calculate_rollover_payday() {
             dec!(0),
             3,
             dec!(0),
-            true
+            true,
+            false
         )
     );
 
@@ -554,6 +570,7 @@ fn check_calculate_rollover_payday() {
             dec!(0),
             3,
             dec!(0),
+            false,
             false
         )
     );
@@ -571,7 +588,8 @@ fn check_calculate_payday_oor() {
             dec!(40),
             31,
             dec!(40),
-            true
+            true,
+            false
         )
     );
 }
@@ -669,4 +687,182 @@ fn get_local_date(dt_str: &str) -> DateTime<Local> {
         .unwrap()
 }
 
+fn recurring_debit(day: i32, amount: rust_decimal::Decimal) -> JsonObject {
+    JsonObject {
+        id: None,
+        oldId: None,
+        category: Category::recurring,
+        name: String::from("test"),
+        day: Some(day),
+        amount,
+        cardid: None,
+        dbName: Db_Name::debit,
+        currency_id: None,
+    }
+}
+
+fn recurring_credit(day: i32, amount: rust_decimal::Decimal) -> JsonObject {
+    JsonObject {
+        id: None,
+        oldId: None,
+        category: Category::recurring,
+        name: String::from("test"),
+        day: Some(day),
+        amount,
+        cardid: None,
+        dbName: Db_Name::credit,
+        currency_id: None,
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Tests for the `calc_following_month` setting
+//
+// Scenario: payday = 24, payment/credit on day 26.
+//   Without the setting the day-26 item falls *after* the upcoming payday and
+//   is therefore excluded from the period that has not yet started.
+//   With the setting enabled it is also counted for the tail of next payday's
+//   month (day > payday-day but ≤ last day of that month).
+// ──────────────────────────────────────────────────────────────────────────────
+
+#[test]
+fn calc_following_month_before_payday_debit() {
+    // 2024-Sep-05 is before payday 24.  next_payday = Sep 24.
+    // Day-26 debit: Sep 26 > Sep 24 → excluded by normal logic.
+    // With calc_following_month: 26 > 24 && 26 ≤ 30 → counted once via second pass.
+    let data = vec![recurring_debit(26, dec!(10))];
+
+    assert_eq!(
+        dec!(0),
+        apiservice::calculate(
+            &data, &HashMap::new(),
+            &get_local_date("2024 Sep 5 12:00:00.000 +0100"),
+            dec!(0), 24, dec!(0), true, false
+        )
+    );
+
+    assert_eq!(
+        dec!(-10),
+        apiservice::calculate(
+            &data, &HashMap::new(),
+            &get_local_date("2024 Sep 5 12:00:00.000 +0100"),
+            dec!(0), 24, dec!(0), true, true
+        )
+    );
+}
+
+#[test]
+fn calc_following_month_before_payday_credit() {
+    // Same scenario with a recurring credit.
+    let data = vec![recurring_credit(26, dec!(125))];
+
+    assert_eq!(
+        dec!(0),
+        apiservice::calculate(
+            &data, &HashMap::new(),
+            &get_local_date("2024 Sep 5 12:00:00.000 +0100"),
+            dec!(0), 24, dec!(0), true, false
+        )
+    );
+
+    assert_eq!(
+        dec!(125),
+        apiservice::calculate(
+            &data, &HashMap::new(),
+            &get_local_date("2024 Sep 5 12:00:00.000 +0100"),
+            dec!(0), 24, dec!(0), true, true
+        )
+    );
+}
+
+#[test]
+fn calc_following_month_after_payday_counts_both_months() {
+    // 2024-Sep-25 is after payday 24.  next_payday = Oct 24.
+    // Day-26 debit: Sep 26 is in the current period (Sep 25 → Oct 24) → counted once.
+    // With calc_following_month: Oct 26 is also in the tail of Oct (26 > 24, 26 ≤ 31) → counted again.
+    let data = vec![recurring_debit(26, dec!(10))];
+
+    assert_eq!(
+        dec!(-10),
+        apiservice::calculate(
+            &data, &HashMap::new(),
+            &get_local_date("2024 Sep 25 12:00:00.000 +0100"),
+            dec!(0), 24, dec!(0), true, false
+        )
+    );
+
+    assert_eq!(
+        dec!(-20),
+        apiservice::calculate(
+            &data, &HashMap::new(),
+            &get_local_date("2024 Sep 25 12:00:00.000 +0100"),
+            dec!(0), 24, dec!(0), true, true
+        )
+    );
+}
+
+#[test]
+fn calc_following_month_day_before_payday_not_double_counted() {
+    // A recurring item whose day is *before* the payday day (22 < 24) is already
+    // included by the after_payday rule and must not be counted a second time.
+    let data = vec![recurring_debit(22, dec!(10))];
+
+    // After payday (Sep 25), next_payday = Oct 24.
+    // after_payday && 22 < 24 → counted once by normal logic.
+    // Second pass: 22 > 24 → FALSE → not counted again.
+    assert_eq!(
+        dec!(-10),
+        apiservice::calculate(
+            &data, &HashMap::new(),
+            &get_local_date("2024 Sep 25 12:00:00.000 +0100"),
+            dec!(0), 24, dec!(0), true, true
+        )
+    );
+}
+
+#[test]
+fn calc_following_month_day_exceeds_month_length_not_counted() {
+    // Day 31 in a month with only 30 days must not be included.
+    // Sep has 30 days, so next_payday = Sep 24, days_in_payday_month = 30.
+    // Second pass: 31 > 24 but 31 > 30 → FALSE.
+    let data = vec![recurring_debit(31, dec!(10))];
+
+    assert_eq!(
+        dec!(0),
+        apiservice::calculate(
+            &data, &HashMap::new(),
+            &get_local_date("2024 Sep 5 12:00:00.000 +0100"),
+            dec!(0), 24, dec!(0), true, true
+        )
+    );
+}
+
+#[test]
+fn calc_following_month_no_day_items_not_double_counted() {
+    // Static items (day = None) must not be affected by calc_following_month.
+    let data = vec![JsonObject {
+        id: None,
+        oldId: None,
+        category: Category::bank,
+        name: String::from("bank"),
+        day: None,
+        amount: dec!(1000),
+        cardid: None,
+        dbName: Db_Name::credit,
+        currency_id: None,
+    }];
+
+    let base = apiservice::calculate(
+        &data, &HashMap::new(),
+        &get_local_date("2024 Sep 5 12:00:00.000 +0100"),
+        dec!(0), 24, dec!(0), true, false
+    );
+    let with_setting = apiservice::calculate(
+        &data, &HashMap::new(),
+        &get_local_date("2024 Sep 5 12:00:00.000 +0100"),
+        dec!(0), 24, dec!(0), true, true
+    );
+
+    assert_eq!(base, with_setting);
+}
 
