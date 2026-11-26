@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Days, Local, Months, NaiveDate, TimeZone};
+use chrono::{DateTime, Datelike, Days, Months, NaiveDate, TimeZone};
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ pub fn apply_currency_conversion(item: &mut JsonObject, currency_rates: &HashMap
     }
 }
 
-pub fn get_items_today(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, now: &DateTime<Local>) -> Vec<JsonObject> {
+pub fn get_items_today<T: TimeZone>(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, now: &DateTime<T>) -> Vec<JsonObject> {
     let mut results: Vec<JsonObject> = Vec::new();
 
     let mut dates: Vec<i32> = vec![now.day() as i32];
@@ -123,10 +123,10 @@ pub fn sum_of_debits(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>
     amount
 }
 
-pub fn calculate(
+pub fn calculate<T: TimeZone>(
     data: &Vec<JsonObject>,
     currency_rates: &HashMap<i32, Decimal>,
-    now: &DateTime<Local>,
+    now: &DateTime<T>,
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
@@ -142,7 +142,7 @@ pub fn calculate(
     };
 
     //TODO: split this off into can be used for calculation?
-    let mut next_payday = match Local.with_ymd_and_hms(now.year(), now.month(), payday, 0, 0, 0) {
+    let mut next_payday = match now.timezone().with_ymd_and_hms(now.year(), now.month(), payday, 0, 0, 0) {
         chrono::offset::LocalResult::Single(single) => single,
         _ => panic!("Time zone error"), //todo: 500
     };
@@ -153,7 +153,7 @@ pub fn calculate(
         next_payday = next_payday + Months::new(1);
     }
 
-    let end_of_month_for_payday = match Local.with_ymd_and_hms(
+    let end_of_month_for_payday = match now.timezone().with_ymd_and_hms(
         next_payday.year(),
         next_payday.month(),
         if calc_to_eom {
@@ -234,10 +234,10 @@ pub fn calculate(
     amount
 }
 
-pub fn can_be_used_in_calculation(
+pub fn can_be_used_in_calculation<T: TimeZone>(
     record: &JsonObject,
-    now: &DateTime<Local>,
-    next_payday: &DateTime<Local>,
+    now: &DateTime<T>,
+    next_payday: &DateTime<T>,
     after_payday: bool,
 ) -> bool {
     if record.day.is_none() {
@@ -250,18 +250,18 @@ pub fn can_be_used_in_calculation(
         _ => (),
     }
 
-    let date_obj: DateTime<Local> = if get_days_from_month(now.year(), now.month())
+    let date_obj: DateTime<T> = if get_days_from_month(now.year(), now.month())
         >= (record.day.unwrap() as u32)
     //TODO: panics if -1?
     //TODO: days in year month
     {
-        match Local.with_ymd_and_hms(now.year(), now.month(), record.day.unwrap() as u32, 0, 0, 0) {
+        match now.timezone().with_ymd_and_hms(now.year(), now.month(), record.day.unwrap() as u32, 0, 0, 0) {
             //TODO: panics if -1?
             chrono::offset::LocalResult::Single(single) => single,
             _ => panic!("Time zone error"), //todo: 500
         }
     } else {
-        match Local.with_ymd_and_hms(now.year(), now.month() + 1, 1, 0, 0, 0) {
+        match now.timezone().with_ymd_and_hms(now.year(), now.month() + 1, 1, 0, 0, 0) {
             chrono::offset::LocalResult::Single(single) => single,
             _ => panic!("Time zone error"), //todo: 500
         }
@@ -279,10 +279,10 @@ pub fn can_be_used_in_calculation(
     false
 }
 
-pub fn remaining_week(
+pub fn remaining_week<T: TimeZone>(
     data: &Vec<JsonObject>,
     currency_rates: &HashMap<i32, Decimal>,
-    now: &DateTime<Local>,
+    now: &DateTime<T>,
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
@@ -304,10 +304,10 @@ pub fn remaining_week(
     amount
 }
 
-pub fn end_of_week(
+pub fn end_of_week<T: TimeZone>(
     data: &Vec<JsonObject>,
     currency_rates: &HashMap<i32, Decimal>,
-    now: &DateTime<Local>,
+    now: &DateTime<T>,
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
@@ -329,7 +329,7 @@ pub fn end_of_week(
     amount
 }
 
-fn weekday(time: &DateTime<Local>) -> Decimal {
+fn weekday<T: TimeZone>(time: &DateTime<T>) -> Decimal {
     //TODO: convert
     match Decimal::from_u32(time.weekday() as u32) {
         Some(result) => result + dec!(1),
@@ -337,10 +337,10 @@ fn weekday(time: &DateTime<Local>) -> Decimal {
     }
 }
 
-pub fn full_weekend(
+pub fn full_weekend<T: TimeZone>(
     data: &Vec<JsonObject>,
     currency_rates: &HashMap<i32, Decimal>,
-    now: &DateTime<Local>,
+    now: &DateTime<T>,
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
@@ -361,11 +361,11 @@ pub fn full_weekend(
     amount
 }
 
-pub fn get_items_between(
+pub fn get_items_between<T: TimeZone>(
     data: &[JsonObject],
     currency_rates: &HashMap<i32, Decimal>,
-    from: &DateTime<Local>,
-    to: &DateTime<Local>,
+    from: &DateTime<T>,
+    to: &DateTime<T>,
 ) -> Vec<JsonObject> {
     let mut results: Vec<JsonObject> = Vec::new();
 

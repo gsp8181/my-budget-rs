@@ -9,6 +9,7 @@ import Checkbox from '@mui/material/Checkbox';
 import Stack from '@mui/material/Stack';
 import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
+import Autocomplete from '@mui/material/Autocomplete';
 import CurrenciesSection from './CurrenciesSection';
 import API_BASE from '../../config';
 
@@ -20,7 +21,9 @@ export default function SettingsPage() {
     pay: '',
     calc_to_eom: false,
     calc_following_month: false,
+    timezone: '',
   });
+  const [tzInfo, setTzInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(false);
@@ -36,6 +39,12 @@ export default function SettingsPage() {
           mapped[el.name] = (el.name === 'calc_to_eom' || el.name === 'calc_following_month') ? el.value === 'true' : el.value;
         }
         setSettings(prev => ({ ...prev, ...mapped }));
+
+        const tzRes = await fetch(`${API_BASE}/api/timezone`);
+        if (!tzRes.ok) throw new Error(`Failed to fetch timezones (${tzRes.status})`);
+        const tz = await tzRes.json();
+        setTzInfo(tz);
+        setSettings(prev => ({ ...prev, timezone: prev.timezone || tz.configured }));
       } catch (e) {
         setError(e.message);
       } finally {
@@ -57,7 +66,10 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`Failed to save settings (${res.status})`);
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(detail || `Failed to save settings (${res.status})`);
+      }
       setSavedMsg(true);
       setTimeout(() => setSavedMsg(false), 3000);
     } catch (e) {
@@ -140,6 +152,27 @@ export default function SettingsPage() {
             Also count recurring payments or credits that fall after the next payday but within the same month (e.g. paid on the 24th but have a direct debit on the 26th).
           </Typography>
         </Box>
+        <Autocomplete
+          options={tzInfo?.available ?? []}
+          value={settings.timezone || null}
+          onChange={(_, value) => setSettings(p => ({ ...p, timezone: value ?? '' }))}
+          disableClearable={!!settings.timezone}
+          autoHighlight
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Timezone"
+              helperText={
+                tzInfo
+                  ? `Used to decide what "today" is. System timezone: ${
+                      tzInfo.system ?? 'unknown'
+                    }${tzInfo.system_valid ? '' : ' (not recognised, defaulting to Europe/London)'}.`
+                  : 'Used to decide what "today" is.'
+              }
+            />
+          )}
+          fullWidth
+        />
         <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>
           Save Settings
         </Button>

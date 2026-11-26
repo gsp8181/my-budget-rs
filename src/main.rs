@@ -103,6 +103,7 @@ fn build_app(pool: DbPool) -> Router {
         .nest("/api/cardheld", cardheld::router())
         .nest("/api/settings", settings::router())
         .nest("/api/currency", currency::router())
+        .nest("/api/timezone", timezone::router())
         .nest("/api", api::router())
         .fallback_service(ServeDir::new("wwwroot").fallback(ServeFile::new("wwwroot/index.html")));
 
