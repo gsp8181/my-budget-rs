@@ -86,8 +86,8 @@ pub fn sum_of_card_held(data: &[JsonObject], currency_rates: &HashMap<i32, Decim
 }
 
 /// Totals of the two debt lists, in GBP: (owed to me, I owe).
-/// "Debt Owed To Me" (/api/debtto) is stored as debt/debit and
-/// "Debt I Owe" (/api/debt) as debt/credit.
+/// "Debt Owed To Me" (/api/debt) is stored as debt/credit and
+/// "Debt I Owe" (/api/debtto) as debt/debit.
 pub fn debt_totals(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>) -> (Decimal, Decimal) {
     let mut owed_to_me = dec!(0);
     let mut i_owe = dec!(0);
@@ -97,8 +97,8 @@ pub fn debt_totals(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>) 
         }
         apply_currency_conversion(&mut obj, currency_rates);
         match obj.dbName {
-            Db_Name::debit => owed_to_me += obj.amount,
-            Db_Name::credit => i_owe += obj.amount,
+            Db_Name::credit => owed_to_me += obj.amount,
+            Db_Name::debit => i_owe += obj.amount,
         }
     }
     (owed_to_me, i_owe)

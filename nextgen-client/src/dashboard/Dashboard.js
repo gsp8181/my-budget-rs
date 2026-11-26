@@ -124,7 +124,7 @@ const categoryRoutes = [
   },
   {
     path: '/debtto',
-    pageName: 'Debt Owed To Me',
+    pageName: 'Debt I Owe',
     apiPath: 'debtto',
     itemName: 'Debt',
     columnDefs: [
@@ -190,7 +190,7 @@ const categoryRoutes = [
   },
   {
     path: '/debt',
-    pageName: 'Debt I Owe',
+    pageName: 'Debt Owed To Me',
     apiPath: 'debt',
     itemName: 'Debt',
     columnDefs: [

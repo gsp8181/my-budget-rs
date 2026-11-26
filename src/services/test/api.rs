@@ -884,12 +884,12 @@ fn debt_item(db_name: Db_Name, amount: rust_decimal::Decimal, currency_id: Optio
 #[test]
 fn debt_totals_offsets_owed_to_me_against_i_owe() {
     let mut data = vec![
-        debt_item(Db_Name::debit, dec!(50), None), // owed to me
-        debt_item(Db_Name::debit, dec!(25), Some(2)), // owed to me, in a foreign currency
-        debt_item(Db_Name::credit, dec!(30), None), // I owe
+        debt_item(Db_Name::credit, dec!(50), None), // owed to me
+        debt_item(Db_Name::credit, dec!(25), Some(2)), // owed to me, in a foreign currency
+        debt_item(Db_Name::debit, dec!(30), None), // I owe
         recurring_debit(5, dec!(999)),              // not debt, ignored
     ];
-    data.push(debt_item(Db_Name::credit, dec!(10), None));
+    data.push(debt_item(Db_Name::debit, dec!(10), None)); // I owe
     let rates: HashMap<i32, rust_decimal::Decimal> = HashMap::from([(2, dec!(0.5))]);
 
     let (owed_to_me, i_owe) = apiservice::debt_totals(&data, &rates);
