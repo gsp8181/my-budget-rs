@@ -9,7 +9,7 @@ rand = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 chrono = "*"
-chrono-tz = "*"
+chrono-tz = "0.10.4"
 iana-time-zone = "*"
 rust_decimal = "*"
 rust_decimal_macros = "*"

@@ -58,6 +58,7 @@ const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 #[tokio::main]
 async fn main() {
     let db_url = "storage/database.sqlite";
+    services::txlog::init(db_url);
     let manager = Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
     let pool: DbPool = Arc::new(Pool::builder(manager).build().expect("Failed to build pool"));
 
