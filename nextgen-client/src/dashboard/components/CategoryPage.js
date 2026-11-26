@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { flushSync } from 'react-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import AddIcon from '@mui/icons-material/Add';

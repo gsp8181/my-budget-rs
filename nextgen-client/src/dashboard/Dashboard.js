@@ -13,18 +13,10 @@ import CategoryPage from './components/CategoryPage';
 import SettingsPage from './components/SettingsPage';
 import { LookupsProvider } from './LookupsContext';
 import AppTheme from '../shared-theme/AppTheme';
-import {
-  chartsCustomizations,
-  dataGridCustomizations,
-  datePickersCustomizations,
-  treeViewCustomizations,
-} from './theme/customizations';
+import { dataGridCustomizations } from './theme/customizations';
 
 const xThemeComponents = {
-  ...chartsCustomizations,
   ...dataGridCustomizations,
-  ...datePickersCustomizations,
-  ...treeViewCustomizations,
 };
 
 const currencyField = { name: 'currency_id', label: 'Currency', type: 'currency' };
