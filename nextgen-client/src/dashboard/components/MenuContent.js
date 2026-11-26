@@ -8,43 +8,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import MoneyIcon from '@mui/icons-material/Money';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import CreditCardIcon from '@mui/icons-material/CreditCard';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import PeopleRoundedIcon from '@mui/icons-material/PeopleRounded';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import PaymentIcon from '@mui/icons-material/Payment';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-
-const topItems = [
-  { text: 'Home', icon: <HomeRoundedIcon />, path: '/' },
-];
-
-const creditItems = [
-  { text: 'Bank', icon: <AccountBalanceIcon />, path: '/bank' },
-  { text: 'Cash', icon: <MoneyIcon />, path: '/cash' },
-  { text: 'Regular Credit', icon: <TrendingUpIcon />, path: '/regularcredit' },
-  { text: 'Card Items Held', icon: <CreditCardIcon />, path: '/cardheld' },
-  { text: 'Uncleared Items', icon: <HourglassEmptyIcon />, path: '/uncleared' },
-  { text: 'Debt Owed To Me', icon: <PeopleRoundedIcon />, path: '/debt' },
-  { text: 'Misc Credit', icon: <AddCircleOutlineIcon />, path: '/misccredit' },
-];
-
-const debitItems = [
-  { text: 'Card Balance', icon: <CreditCardIcon />, path: '/cardbalance' },
-  { text: 'Regular Payment', icon: <PaymentIcon />, path: '/regularpayment' },
-  { text: 'Debt I Owe', icon: <TrendingDownIcon />, path: '/debtto' },
-  { text: 'Misc Debit', icon: <RemoveCircleOutlineIcon />, path: '/miscdebit' },
-];
-
-const secondaryListItems = [
-  { text: 'Settings', icon: <SettingsRoundedIcon />, path: '/settings' },
-];
+import { creditPages, debitPages, homePage, settingsPage } from '../pages';
 
 export default function MenuContent({ onNavigate }) {
   const navigate = useNavigate();
@@ -53,11 +17,11 @@ export default function MenuContent({ onNavigate }) {
   const isSelected = (path) =>
     path === '/' ? location.pathname === '/' : location.pathname === path;
 
-  const renderItem = (item) => (
-    <ListItem key={item.path} disablePadding sx={{ display: 'block' }}>
-      <ListItemButton selected={isSelected(item.path)} onClick={() => { navigate(item.path); onNavigate?.(); }}>
-        <ListItemIcon>{item.icon}</ListItemIcon>
-        <ListItemText primary={item.text} />
+  const renderItem = ({ path, menuLabel, icon: Icon }) => (
+    <ListItem key={path} disablePadding sx={{ display: 'block' }}>
+      <ListItemButton selected={isSelected(path)} onClick={() => { navigate(path); onNavigate?.(); }}>
+        <ListItemIcon><Icon /></ListItemIcon>
+        <ListItemText primary={menuLabel} />
       </ListItemButton>
     </ListItem>
   );
@@ -65,21 +29,21 @@ export default function MenuContent({ onNavigate }) {
   return (
     <Stack sx={{ flexGrow: 1, p: 1, justifyContent: 'space-between' }}>
       <List dense>
-        {topItems.map(renderItem)}
+        {renderItem(homePage)}
         <Divider sx={{ my: 1 }} />
         <Typography variant="caption" sx={{ px: 1.5, py: 0.5, color: 'text.secondary', display: 'block' }}>
           Credits
         </Typography>
-        {creditItems.map(renderItem)}
+        {creditPages.map(renderItem)}
         <Divider sx={{ my: 1 }} />
         <Typography variant="caption" sx={{ px: 1.5, py: 0.5, color: 'text.secondary', display: 'block' }}>
           Debits
         </Typography>
-        {debitItems.map(renderItem)}
+        {debitPages.map(renderItem)}
       </List>
 
       <List dense>
-        {secondaryListItems.map(renderItem)}
+        {renderItem(settingsPage)}
       </List>
     </Stack>
   );
