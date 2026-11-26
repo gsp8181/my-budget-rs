@@ -23,6 +23,9 @@ pub(crate) struct PublicItem {
     pub card_held_total: Decimal,
     pub net_saved_avg: Decimal,
     pub saved_this_year: Decimal,
+    pub debt_owed_to_me: Decimal,
+    pub debt_i_owe: Decimal,
+    pub net_debt: Decimal,
     pub today: Vec<JsonObject>,
 }
 

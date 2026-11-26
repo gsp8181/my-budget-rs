@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     models::item::{JsonObject, PublicItem},
     services::apiservice::{
-        calculate, end_of_week, full_weekend, get_items_between, get_items_today, net_saved_avg,
+        calculate, debt_totals, end_of_week, full_weekend, get_items_between, get_items_today, net_saved_avg,
         remaining_week, saved_this_year, sum_of_card_held, sum_of_credits, sum_of_debits,
     },
     services::{
@@ -75,6 +75,8 @@ async fn build_public_item(pool: &DbPool, tz: Tz, target_date: Option<DateTime<T
         panic!("failed to read calc_following_month setting")
     };
 
+    let (debt_owed_to_me, debt_i_owe) = debt_totals(&results, &currency_rates);
+
     PublicItem {
         amount: calculate(
             &results,
@@ -122,6 +124,9 @@ async fn build_public_item(pool: &DbPool, tz: Tz, target_date: Option<DateTime<T
         card_held_total: sum_of_card_held(&results, &currency_rates),
         net_saved_avg: net_saved_avg(&results, &currency_rates, daily_rate, total_pay),
         saved_this_year: saved_this_year(&results, &currency_rates, daily_rate, total_pay),
+        debt_owed_to_me,
+        debt_i_owe,
+        net_debt: debt_owed_to_me - debt_i_owe,
         today: if target_date.is_some() {
             get_items_between(&results, &currency_rates, &real_now, &now)
         } else {

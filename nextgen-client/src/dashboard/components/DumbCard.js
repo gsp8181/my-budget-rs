@@ -70,7 +70,7 @@ function DumbCard({ title, value, description, trend }) {
                 {value}
               </Typography>
             </Stack>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>
               {description}
             </Typography>
           </Stack>

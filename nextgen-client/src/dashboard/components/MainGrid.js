@@ -51,6 +51,12 @@ export default function MainGrid() {
     { title: 'Card Balance Held', value: formatCurrency(data.card_held_total), description: 'Amount held on card balances', trend: 'down' },
     { title: 'Avg Monthly Saved', value: formatCurrency(data.net_saved_avg), description: 'Average amount saved per month', trend: 'up' },
     { title: 'Saved This Year', value: formatCurrency(data.saved_this_year), description: 'Total saved this year', trend: 'up' },
+    {
+      title: 'Net Debt',
+      value: formatCurrency(data.net_debt),
+      description: `Owed to me ${formatCurrency(data.debt_owed_to_me)}\nI owe ${formatCurrency(data.debt_i_owe)}`,
+      trend: Number(data.net_debt) > 0 ? 'up' : Number(data.net_debt) < 0 ? 'down' : 'neutral',
+    },
   ];
 
   return (
