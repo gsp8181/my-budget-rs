@@ -19,8 +19,15 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Alert from '@mui/material/Alert';
 import API_BASE from '../../config';
+import { useLookups } from '../LookupsContext';
 
-export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFormValues, formFields, currencies, cards }) {
+export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFormValues, formFields, useCards }) {
+  const { currencies, cards: allCards, status: lookupStatus, refresh: refreshLookups } = useLookups();
+  const cards = useCards ? allCards : [];
+  // Default to the oldest currency (lowest id) which is always £.
+  const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
+  // Card balances are themselves the options for the card dropdowns elsewhere.
+  const changesLookups = apiPath === 'cardbalance';
   const [rows, setRows] = useState([]);
   const [rowModesModel, setRowModesModel] = useState({});
   const [loading, setLoading] = useState(true);
@@ -93,24 +100,26 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
         body: JSON.stringify(changed),
       });
       if (!res.ok) throw new Error(`Failed to save (${res.status})`);
+      if (changesLookups) refreshLookups();
       return newRow;
     } catch (e) {
       setError(e.message);
       return oldRow;
     }
-  }, [apiPath]);
+  }, [apiPath, changesLookups, refreshLookups]);
 
   const handleDelete = useCallback(async (id) => {
     try {
       const res = await fetch(`${API_BASE}/api/${apiPath}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error(`Delete failed (${res.status})`);
       setRows((prev) => prev.filter((r) => r.id !== id));
+      if (changesLookups) refreshLookups();
     } catch (e) {
       setError(e.message);
     } finally {
       setDeleteId(null);
     }
-  }, [apiPath]);
+  }, [apiPath, changesLookups, refreshLookups]);
 
   const handleAdd = async () => {
     try {
@@ -123,10 +132,37 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
       setAddOpen(false);
       setFormValues(defaultFormValues);
       fetchData();
+      if (changesLookups) refreshLookups();
     } catch (e) {
       setError(e.message);
     }
   };
+
+  const openAddDialog = () => {
+    setFormValues({ ...defaultFormValues, currency_id: defaultCurrencyId });
+    setAddOpen(true);
+    refreshLookups();
+  };
+
+  // If the currencies only arrive after the dialog opened, fill in the default then.
+  useEffect(() => {
+    if (addOpen && defaultCurrencyId !== '') {
+      setFormValues(prev => (prev.currency_id === '' || prev.currency_id == null
+        ? { ...prev, currency_id: defaultCurrencyId }
+        : prev));
+    }
+  }, [addOpen, defaultCurrencyId]);
+
+  // Placeholder row for a dropdown with nothing to show, explaining why.
+  const emptyOption = (what) => (
+    <MenuItem disabled value="">
+      {lookupStatus === 'error'
+        ? `Couldn't load ${what} - retrying…`
+        : lookupStatus === 'loading'
+          ? `Loading ${what}…`
+          : `No ${what} yet`}
+    </MenuItem>
+  );
 
   const handleAddKeyDown = (e) => {
     if (e.key === 'Enter') handleAdd();
@@ -144,6 +180,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
       <Select
         value={params.value ?? ''}
         onChange={(e) => params.api.setEditCellValue({ id: params.id, field: 'currency_id', value: e.target.value })}
+        onOpen={() => refreshLookups()}
         size="small"
         variant="standard"
         disableUnderline
@@ -152,9 +189,10 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
         {(currencies || []).map(c => (
           <MenuItem key={c.id} value={c.id}>{c.symbol}</MenuItem>
         ))}
+        {currencies.length === 0 && emptyOption('currencies')}
       </Select>
     );
-  }, [currencies]);
+  }, [currencies, refreshLookups, lookupStatus]);
 
   // Custom edit cell for cardid.
   const CardEditCell = useCallback((params) => {
@@ -162,6 +200,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
       <Select
         value={params.value ?? ''}
         onChange={(e) => params.api.setEditCellValue({ id: params.id, field: 'cardid', value: e.target.value })}
+        onOpen={() => refreshLookups()}
         size="small"
         variant="standard"
         disableUnderline
@@ -170,9 +209,10 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
         {(cards || []).map(c => (
           <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
         ))}
+        {cards.length === 0 && emptyOption('cards')}
       </Select>
     );
-  }, [cards]);
+  }, [cards, refreshLookups, lookupStatus]);
 
   // Transform columnDefs: replace valueFormatter on 'amount' with a renderCell
   // that prepends the correct currency symbol from the row's currency_id.
@@ -282,6 +322,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
               value={currencyFilter}
               label="Currency"
               onChange={e => setCurrencyFilter(e.target.value)}
+              onOpen={() => refreshLookups()}
             >
               <MenuItem value="all">All</MenuItem>
               {(currencies || []).map(c => (
@@ -293,7 +334,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => { setFormValues(defaultFormValues); setAddOpen(true); }}
+          onClick={openAddDialog}
         >
           Add {pageName}
         </Button>
@@ -326,6 +367,11 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
       <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add {pageName}</DialogTitle>
         <DialogContent>
+          {lookupStatus === 'error' && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              Couldn't reach the server to load currencies and cards. Retrying automatically…
+            </Alert>
+          )}
           {formFields.map((field, idx) => {
             if (field.type === 'currency') {
               return (
@@ -338,10 +384,12 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
                   fullWidth
                   margin="normal"
                   autoFocus={idx === 0}
+                  SelectProps={{ onOpen: () => refreshLookups() }}
                 >
-                  {(currencies || []).map(c => (
+                  {currencies.map(c => (
                     <MenuItem key={c.id} value={c.id}>{c.symbol} — {c.name}</MenuItem>
                   ))}
+                  {currencies.length === 0 && emptyOption('currencies')}
                 </TextField>
               );
             }
@@ -356,10 +404,12 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
                   fullWidth
                   margin="normal"
                   autoFocus={idx === 0}
+                  SelectProps={{ onOpen: () => refreshLookups() }}
                 >
-                  {(cards || []).map(c => (
+                  {cards.map(c => (
                     <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
                   ))}
+                  {cards.length === 0 && emptyOption('cards')}
                 </TextField>
               );
             }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -28,35 +28,64 @@ export default function SettingsPage() {
   const [error, setError] = useState(null);
   const [savedMsg, setSavedMsg] = useState(false);
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/settings`);
-        if (!res.ok) throw new Error(`Failed to fetch settings (${res.status})`);
-        const data = await res.json();
-        const mapped = {};
-        for (const el of data) {
-          mapped[el.name] = (el.name === 'calc_to_eom' || el.name === 'calc_following_month') ? el.value === 'true' : el.value;
-        }
-        setSettings(prev => ({ ...prev, ...mapped }));
+  // Whether the stored settings have been read; saving before then would overwrite
+  // them with blank values (e.g. if the page was opened while offline).
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-        const tzRes = await fetch(`${API_BASE}/api/timezone`);
-        if (!tzRes.ok) throw new Error(`Failed to fetch timezones (${tzRes.status})`);
-        const tz = await tzRes.json();
-        setTzInfo(tz);
-        setSettings(prev => ({ ...prev, timezone: prev.timezone || tz.configured }));
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/settings`);
+      if (!res.ok) throw new Error(`Failed to fetch settings (${res.status})`);
+      const data = await res.json();
+      const mapped = {};
+      for (const el of data) {
+        mapped[el.name] = (el.name === 'calc_to_eom' || el.name === 'calc_following_month') ? el.value === 'true' : el.value;
       }
-    };
-    fetchSettings();
+      setSettings(prev => ({ ...prev, ...mapped }));
+      setSettingsLoaded(true);
+      setError(null);
+    } catch (e) {
+      setError(`${e.message}. Retrying when the connection is back…`);
+    }
   }, []);
+
+  const fetchTimezones = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/timezone`);
+      if (!res.ok) throw new Error(`Failed to fetch timezones (${res.status})`);
+      const tz = await res.json();
+      setTzInfo(tz);
+      setSettings(prev => ({ ...prev, timezone: prev.timezone || tz.configured }));
+    } catch (e) {
+      // Shown as the dropdown's empty text; retried on open / reconnect.
+    }
+  }, []);
+
+  useEffect(() => {
+    Promise.all([fetchSettings(), fetchTimezones()]).finally(() => setLoading(false));
+  }, [fetchSettings, fetchTimezones]);
+
+  // Retry whatever failed once the browser is back online.
+  useEffect(() => {
+    const onOnline = () => {
+      if (!settingsLoaded) fetchSettings();
+      if (!tzInfo) fetchTimezones();
+    };
+    window.addEventListener('online', onOnline);
+    // The browser can be online while the server isn't reachable, so also poll.
+    const timer = (!settingsLoaded || !tzInfo) ? setInterval(onOnline, 5000) : null;
+    return () => {
+      window.removeEventListener('online', onOnline);
+      if (timer) clearInterval(timer);
+    };
+  }, [settingsLoaded, tzInfo, fetchSettings, fetchTimezones]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = Object.keys(settings).map(key => ({
+    if (!settingsLoaded) return;
+    const payload = Object.keys(settings)
+      .filter(key => !(key === 'timezone' && !settings.timezone))
+      .map(key => ({
       name: key,
       value: String(settings[key]),
     }));
@@ -154,6 +183,8 @@ export default function SettingsPage() {
         </Box>
         <Autocomplete
           options={tzInfo?.available ?? []}
+          onOpen={() => { if (!tzInfo) fetchTimezones(); }}
+          noOptionsText={tzInfo ? 'No matching timezone' : "Couldn't load timezones - retrying…"}
           value={settings.timezone || null}
           onChange={(_, value) => setSettings(p => ({ ...p, timezone: value ?? '' }))}
           disableClearable={!!settings.timezone}
@@ -173,7 +204,7 @@ export default function SettingsPage() {
           )}
           fullWidth
         />
-        <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>
+        <Button type="submit" variant="contained" disabled={!settingsLoaded} sx={{ alignSelf: 'flex-start' }}>
           Save Settings
         </Button>
         <Divider />

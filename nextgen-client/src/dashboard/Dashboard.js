@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 
 import { alpha } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -12,6 +11,7 @@ import MainGrid from './components/MainGrid';
 import SideMenu from './components/SideMenu';
 import CategoryPage from './components/CategoryPage';
 import SettingsPage from './components/SettingsPage';
+import { LookupsProvider } from './LookupsContext';
 import AppTheme from '../shared-theme/AppTheme';
 import {
   chartsCustomizations,
@@ -19,7 +19,6 @@ import {
   datePickersCustomizations,
   treeViewCustomizations,
 } from './theme/customizations';
-import API_BASE from '../config';
 
 const xThemeComponents = {
   ...chartsCustomizations,
@@ -224,24 +223,8 @@ const categoryRoutes = [
 ];
 
 export default function Dashboard(props) {
-  const [currencies, setCurrencies] = useState([]);
-  const [cards, setCards] = useState([]);
-
-  useEffect(() => {
-    fetch(`${API_BASE}/api/currency`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setCurrencies(data))
-      .catch(() => {});
-    fetch(`${API_BASE}/api/cardbalance`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setCards(data))
-      .catch(() => {});
-  }, []);
-
-  // Default to the oldest currency (lowest id) which is always £.
-  const defaultCurrencyId = currencies.length > 0 ? currencies[0].id : '';
-
   return (
+    <LookupsProvider>
     <AppTheme {...props} themeComponents={xThemeComponents}>
       <CssBaseline enableColorScheme />
       <Router>
@@ -284,10 +267,9 @@ export default function Dashboard(props) {
                         apiPath={apiPath}
                         pageName={itemName}
                         columnDefs={columnDefs}
-                        defaultFormValues={{ ...defaultFormValues, currency_id: defaultCurrencyId }}
+                        defaultFormValues={defaultFormValues}
                         formFields={formFields}
-                        currencies={currencies}
-                        cards={useCards ? cards : []}
+                        useCards={!!useCards}
                       />
                     </>
                   } />
@@ -304,5 +286,6 @@ export default function Dashboard(props) {
         </Box>
       </Router>
     </AppTheme>
+    </LookupsProvider>
   );
 }

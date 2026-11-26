@@ -14,6 +14,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import API_BASE from '../../config';
+import { useLookups } from '../LookupsContext';
 
 export default function CurrenciesSection() {
   const [currencies, setCurrencies] = useState([]);
@@ -21,6 +22,8 @@ export default function CurrenciesSection() {
   const [error, setError] = useState(null);
   const [newCurrency, setNewCurrency] = useState({ rate: '', symbol: '', name: '' });
   const [adding, setAdding] = useState(false);
+  // Keep the app-wide currency dropdowns in step with changes made here.
+  const { refresh: refreshLookups } = useLookups();
 
   const fetchCurrencies = useCallback(async () => {
     setLoading(true);
@@ -38,6 +41,18 @@ export default function CurrenciesSection() {
 
   useEffect(() => { fetchCurrencies(); }, [fetchCurrencies]);
 
+  // If the first load failed (e.g. offline), try again when the connection returns.
+  const loadFailed = !loading && currencies.length === 0 && !!error;
+  useEffect(() => {
+    window.addEventListener('online', fetchCurrencies);
+    // The browser can be online while the server isn't reachable, so also poll.
+    const timer = loadFailed ? setInterval(fetchCurrencies, 5000) : null;
+    return () => {
+      window.removeEventListener('online', fetchCurrencies);
+      if (timer) clearInterval(timer);
+    };
+  }, [fetchCurrencies, loadFailed]);
+
   const handleAdd = async () => {
     if (!newCurrency.rate || !newCurrency.symbol || !newCurrency.name) {
       setError('Rate, symbol, and name are all required.');
@@ -53,6 +68,7 @@ export default function CurrenciesSection() {
       if (!res.ok) throw new Error(`Failed to add currency (${res.status})`);
       setNewCurrency({ rate: '', symbol: '', name: '' });
       fetchCurrencies();
+      refreshLookups();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -69,6 +85,7 @@ export default function CurrenciesSection() {
       }
       if (!res.ok) throw new Error(`Failed to delete currency (${res.status})`);
       fetchCurrencies();
+      refreshLookups();
     } catch (e) {
       setError(e.message);
     }
@@ -86,6 +103,7 @@ export default function CurrenciesSection() {
         body: JSON.stringify({ rate: currency.rate, symbol: currency.symbol, name: currency.name }),
       });
       if (!res.ok) throw new Error(`Failed to update currency (${res.status})`);
+      refreshLookups();
     } catch (e) {
       setError(e.message);
       fetchCurrencies();
