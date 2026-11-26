@@ -15,5 +15,4 @@ yarn-debug.log*
 yarn-error.log*
 
 
-client/dist
 cli/config.toml
