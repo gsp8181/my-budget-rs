@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use crate::models::currency::{currency, Currency};
+use crate::services::txlog::{self, Action};
 use crate::{AppError, DbPool};
 
 pub async fn get_all_currencies(pool: &DbPool) -> Result<Vec<Currency>, AppError> {
@@ -55,14 +56,17 @@ pub async fn insert_currency(
         name,
     };
     let conn = pool.get().await?;
-    conn.interact(move |conn| {
-        diesel::insert_into(currency::table)
-            .values(&new_currency)
-            .returning(currency::all_columns)
-            .get_result(conn)
-    })
-    .await?
-    .map_err(AppError::from)
+    let created: Currency = conn
+        .interact(move |conn| {
+            diesel::insert_into(currency::table)
+                .values(&new_currency)
+                .returning(currency::all_columns)
+                .get_result(conn)
+        })
+        .await?
+        .map_err(AppError::from)?;
+    txlog::record(Action::Create, "currency", &created);
+    Ok(created)
 }
 
 pub async fn update_currency(
@@ -73,30 +77,41 @@ pub async fn update_currency(
     name: String,
 ) -> Result<Currency, AppError> {
     let conn = pool.get().await?;
-    conn.interact(move |conn| {
-        diesel::update(currency::table.filter(currency::id.eq(id)))
-            .set((
-                currency::rate.eq(rate),
-                currency::symbol.eq(symbol),
-                currency::name.eq(name),
-            ))
-            .returning(currency::all_columns)
-            .get_result(conn)
-    })
-    .await?
-    .map_err(AppError::from)
+    let updated: Currency = conn
+        .interact(move |conn| {
+            diesel::update(currency::table.filter(currency::id.eq(id)))
+                .set((
+                    currency::rate.eq(rate),
+                    currency::symbol.eq(symbol),
+                    currency::name.eq(name),
+                ))
+                .returning(currency::all_columns)
+                .get_result(conn)
+        })
+        .await?
+        .map_err(AppError::from)?;
+    txlog::record(Action::Update, "currency", &updated);
+    Ok(updated)
 }
 
 pub async fn delete_currency(pool: &DbPool, id: i32) -> Result<(), AppError> {
     let conn = pool.get().await?;
     let result = conn
         .interact(move |conn| {
-            diesel::delete(currency::table.filter(currency::id.eq(id))).execute(conn)
+            diesel::delete(currency::table.filter(currency::id.eq(id)))
+                .returning(currency::all_columns)
+                .get_result::<Currency>(conn)
+                .optional()
         })
         .await?;
 
     match result {
-        Ok(_) => Ok(()),
+        Ok(deleted) => {
+            if let Some(c) = &deleted {
+                txlog::record(Action::Delete, "currency", c);
+            }
+            Ok(())
+        }
         Err(diesel::result::Error::DatabaseError(_, ref info))
             if info.message().contains("Cannot delete currency") =>
         {

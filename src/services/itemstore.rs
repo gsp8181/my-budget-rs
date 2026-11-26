@@ -2,6 +2,7 @@ use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};
 
 use crate::models::item::{item, Category, DatabaseObject, Db_Name, JsonEntryObject};
+use crate::services::txlog::{self, Action};
 use crate::{AppError, DbPool};
 
 pub async fn get_collection(pool: &DbPool) -> Vec<DatabaseObject> {
@@ -95,6 +96,7 @@ pub async fn insert_record(
         .map_err(AppError::from)?;
 
     new_obj.id = id;
+    txlog::record(Action::Create, "item", &new_obj);
     Ok(new_obj)
 }
 
@@ -152,6 +154,7 @@ pub async fn modify_record_by_id(
         .await?
         .map_err(AppError::from)?;
 
+    txlog::record(Action::Update, "item", &affected);
     Ok(affected)
 }
 
@@ -162,16 +165,22 @@ pub async fn delete_record_by_id(
     id: i32,
 ) -> Result<Option<()>, AppError> {
     let conn = pool.get().await?;
-    let affected = conn
+    let deleted: Option<DatabaseObject> = conn
         .interact(move |conn| {
             diesel::delete(item::table)
                 .filter(item::id.eq(id))
                 .filter(item::dbName.eq(db_name))
                 .filter(item::category.eq(category))
-                .execute(conn)
+                .returning(item::all_columns)
+                .get_result(conn)
+                .optional()
         })
         .await?
         .map_err(AppError::from)?;
 
-    Ok((affected == 1).then_some(()))
+    if let Some(obj) = &deleted {
+        txlog::record(Action::Delete, "item", obj);
+    }
+
+    Ok(deleted.map(|_| ()))
 }
