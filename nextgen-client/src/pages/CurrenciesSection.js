@@ -12,7 +12,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import API_BASE from '../../config';
+import api from '../api';
 import { useLookups } from '../LookupsContext';
 
 export default function CurrenciesSection() {
@@ -28,9 +28,7 @@ export default function CurrenciesSection() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/currency`);
-      if (!res.ok) throw new Error(`Failed to fetch currencies (${res.status})`);
-      setCurrencies(await res.json());
+      setCurrencies(await api.get('/currency'));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -59,12 +57,7 @@ export default function CurrenciesSection() {
     }
     setAdding(true);
     try {
-      const res = await fetch(`${API_BASE}/api/currency`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCurrency),
-      });
-      if (!res.ok) throw new Error(`Failed to add currency (${res.status})`);
+      await api.post('/currency', newCurrency);
       setNewCurrency({ rate: '', symbol: '', name: '' });
       fetchCurrencies();
       refreshLookups();
@@ -77,12 +70,8 @@ export default function CurrenciesSection() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/currency/${id}`, { method: 'DELETE' });
-      if (res.status === 409) {
-        const msg = await res.text();
-        throw new Error(msg || 'Cannot delete: currency is linked to items.');
-      }
-      if (!res.ok) throw new Error(`Failed to delete currency (${res.status})`);
+      // A 409 means the currency is still used by items; the server's message explains.
+      await api.delete(`/currency/${id}`);
       fetchCurrencies();
       refreshLookups();
     } catch (e) {
@@ -96,12 +85,7 @@ export default function CurrenciesSection() {
 
   const handleInlineSave = async (currency) => {
     try {
-      const res = await fetch(`${API_BASE}/api/currency/${currency.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rate: currency.rate, symbol: currency.symbol, name: currency.name }),
-      });
-      if (!res.ok) throw new Error(`Failed to update currency (${res.status})`);
+      await api.put(`/currency/${currency.id}`, { rate: currency.rate, symbol: currency.symbol, name: currency.name });
       refreshLookups();
     } catch (e) {
       setError(e.message);

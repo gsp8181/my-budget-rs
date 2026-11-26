@@ -7,21 +7,17 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import StaticDataGrid from './StaticDataGrid';
-import DumbCard from './DumbCard';
-import API_BASE from '../../config';
-import formatCurrency from '../../utils/formatCurrency';
+import StaticDataGrid from '../components/StaticDataGrid';
+import SummaryCard from '../components/SummaryCard';
+import api from '../api';
+import formatCurrency from '../utils/formatCurrency';
 
-export default function MainGrid() {
+export default function HomePage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Failed to load dashboard (${res.status})`);
-        return res.json();
-      })
+    api.get('')
       .then(setData)
       .catch((e) => setError(e.message));
   }, []);
@@ -67,7 +63,7 @@ export default function MainGrid() {
       <Grid container spacing={2} sx={{ mb: (theme) => theme.spacing(2) }}>
         {overviewCards.map((card) => (
           <Grid key={card.title} xs={12} sm={6} lg={3}>
-            <DumbCard {...card} />
+            <SummaryCard {...card} />
           </Grid>
         ))}
       </Grid>
@@ -89,7 +85,7 @@ export default function MainGrid() {
       <Grid container spacing={2}>
         {summaryCards.map((card) => (
           <Grid key={card.title} xs={12} sm={6} lg={3}>
-            <DumbCard {...card} />
+            <SummaryCard {...card} />
           </Grid>
         ))}
       </Grid>

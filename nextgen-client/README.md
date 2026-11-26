@@ -18,5 +18,8 @@ Set `REACT_APP_API_URL` to point at a different API.
 npm run build    # outputs to build/
 ```
 
+Code layout: `src/pages/` whole screens, `src/components/` reusable pieces, `src/theme/` styling,
+`src/pageConfig.js` the list of pages (sidebar + routes), `src/api.js` all calls to the backend.
+
 The Dockerfile builds this and serves `build/` from the Rust binary's `wwwroot`.
 `../build-client.sh` does the same for a local `wwwroot`.

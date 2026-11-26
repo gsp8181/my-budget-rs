@@ -23,7 +23,7 @@ AreaGradient.propTypes = {
   id: PropTypes.string.isRequired,
 };
 
-function DumbCard({ title, value, description, trend }) {
+function SummaryCard({ title, value, description, trend }) {
   const theme = useTheme();
 
   const trendColors = {
@@ -81,11 +81,11 @@ function DumbCard({ title, value, description, trend }) {
   );
 }
 
-DumbCard.propTypes = {
+SummaryCard.propTypes = {
   description: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
   trend: PropTypes.oneOf(['down', 'neutral', 'up']).isRequired,
   value: PropTypes.string.isRequired,
 };
 
-export default DumbCard;
+export default SummaryCard;

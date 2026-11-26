@@ -17,7 +17,7 @@ import Select from '@mui/material/Select';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Alert from '@mui/material/Alert';
-import API_BASE from '../../config';
+import api from '../api';
 import { useLookups } from '../LookupsContext';
 
 export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFormValues, formFields, useCards }) {
@@ -54,10 +54,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/${apiPath}`);
-      if (!res.ok) throw new Error(`Failed to fetch data (${res.status})`);
-      const data = await res.json();
-      setRows(data);
+      setRows(await api.get(`/${apiPath}`));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -93,12 +90,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
     }
     if (Object.keys(changed).length === 0) return oldRow;
     try {
-      const res = await fetch(`${API_BASE}/api/${apiPath}/${newRow.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(changed),
-      });
-      if (!res.ok) throw new Error(`Failed to save (${res.status})`);
+      await api.put(`/${apiPath}/${newRow.id}`, changed);
       if (changesLookups) refreshLookups();
       return newRow;
     } catch (e) {
@@ -109,8 +101,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
 
   const handleDelete = useCallback(async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/${apiPath}/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+      await api.delete(`/${apiPath}/${id}`);
       setRows((prev) => prev.filter((r) => r.id !== id));
       if (changesLookups) refreshLookups();
     } catch (e) {
@@ -122,12 +113,7 @@ export default function CategoryPage({ apiPath, pageName, columnDefs, defaultFor
 
   const handleAdd = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/${apiPath}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formValues),
-      });
-      if (!res.ok) throw new Error(`Failed to add item (${res.status})`);
+      await api.post(`/${apiPath}`, formValues);
       setAddOpen(false);
       setFormValues(defaultFormValues);
       fetchData();

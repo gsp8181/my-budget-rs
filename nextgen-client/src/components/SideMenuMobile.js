@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import API_BASE from '../../config';
+import api from '../api';
 import PropTypes from 'prop-types';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
@@ -19,12 +19,7 @@ function SideMenuMobile({ open, toggleDrawer }) {
 
   React.useEffect(() => {
     let mounted = true;
-    const url = `${API_BASE.replace(/\/$/, '')}/api/me`;
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) throw new Error('network response was not ok');
-        return res.json();
-      })
+    api.get('/me')
       .then((data) => {
         if (mounted && data) {
           setUser({ username: data.username || user.username, email: data.email || user.email });

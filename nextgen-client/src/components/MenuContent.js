@@ -8,7 +8,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { creditPages, debitPages, homePage, settingsPage } from '../pages';
+import { creditPages, debitPages, homePage, settingsPage } from '../pageConfig';
 
 export default function MenuContent({ onNavigate }) {
   const navigate = useNavigate();

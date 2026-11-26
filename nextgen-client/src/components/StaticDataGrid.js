@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import formatCurrency from '../../utils/formatCurrency';
+import formatCurrency from '../utils/formatCurrency';
 
 const columns = [
   { field: 'id', headerName: 'ID', width: 90 },

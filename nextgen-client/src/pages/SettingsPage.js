@@ -11,7 +11,7 @@ import Alert from '@mui/material/Alert';
 import Divider from '@mui/material/Divider';
 import Autocomplete from '@mui/material/Autocomplete';
 import CurrenciesSection from './CurrenciesSection';
-import API_BASE from '../../config';
+import api from '../api';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState({
@@ -34,9 +34,7 @@ export default function SettingsPage() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/settings`);
-      if (!res.ok) throw new Error(`Failed to fetch settings (${res.status})`);
-      const data = await res.json();
+      const data = await api.get('/settings');
       const mapped = {};
       for (const el of data) {
         mapped[el.name] = (el.name === 'calc_to_eom' || el.name === 'calc_following_month') ? el.value === 'true' : el.value;
@@ -51,9 +49,7 @@ export default function SettingsPage() {
 
   const fetchTimezones = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/timezone`);
-      if (!res.ok) throw new Error(`Failed to fetch timezones (${res.status})`);
-      const tz = await res.json();
+      const tz = await api.get('/timezone');
       setTzInfo(tz);
       setSettings(prev => ({ ...prev, timezone: prev.timezone || tz.configured }));
     } catch (e) {
@@ -90,15 +86,7 @@ export default function SettingsPage() {
       value: String(settings[key]),
     }));
     try {
-      const res = await fetch(`${API_BASE}/api/settings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const detail = await res.text();
-        throw new Error(detail || `Failed to save settings (${res.status})`);
-      }
+      await api.post('/settings', payload);
       setSavedMsg(true);
       setTimeout(() => setSavedMsg(false), 3000);
     } catch (e) {

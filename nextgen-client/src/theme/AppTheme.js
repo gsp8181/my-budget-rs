@@ -7,6 +7,7 @@ import { dataDisplayCustomizations } from './customizations/dataDisplay';
 import { feedbackCustomizations } from './customizations/feedback';
 import { navigationCustomizations } from './customizations/navigation';
 import { surfacesCustomizations } from './customizations/surfaces';
+import { dataGridCustomizations } from './customizations/dataGrid';
 import { colorSchemes, typography, shadows, shape } from './themePrimitives';
 
 function AppTheme({ children, disableCustomTheme, themeComponents }) {
@@ -29,6 +30,7 @@ function AppTheme({ children, disableCustomTheme, themeComponents }) {
             ...feedbackCustomizations,
             ...navigationCustomizations,
             ...surfacesCustomizations,
+            ...dataGridCustomizations,
             ...themeComponents,
           },
         });

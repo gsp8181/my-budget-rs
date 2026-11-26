@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import API_BASE from '../config';
+import api from './api';
 
 // Shared dropdown data (currencies and cards), with refresh-on-demand so dropdowns
 // recover from a failed first load and pick up items added elsewhere in the app.
@@ -13,12 +13,6 @@ const LookupsContext = createContext({
   refresh: () => Promise.resolve(),
 });
 
-async function getJson(path) {
-  const res = await fetch(`${API_BASE}${path}`);
-  if (!res.ok) throw new Error(`Failed to fetch ${path} (${res.status})`);
-  return res.json();
-}
-
 export function LookupsProvider({ children }) {
   const [currencies, setCurrencies] = useState([]);
   const [cards, setCards] = useState([]);
@@ -31,7 +25,7 @@ export function LookupsProvider({ children }) {
     if (inflight.current) return inflight.current;
     const request = (async () => {
       try {
-        const [cur, crd] = await Promise.all([getJson('/api/currency'), getJson('/api/cardbalance')]);
+        const [cur, crd] = await Promise.all([api.get('/currency'), api.get('/cardbalance')]);
         setCurrencies(cur);
         setCards(crd);
         setStatus('ok');
