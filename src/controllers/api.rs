@@ -4,7 +4,8 @@ use axum::{
     extract::{Query, State},
     Json,
 };
-use chrono::{DateTime, Local, NaiveDate, TimeZone};
+use chrono::{DateTime, NaiveDate, TimeZone, Utc};
+use chrono_tz::Tz;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     models::item::{JsonObject, PublicItem},
     services::apiservice::{
-        calculate, end_of_week, full_weekend, get_items_between, get_items_today, net_saved_avg,
+        calculate, end_of_week, parse_timezone, full_weekend, get_items_between, get_items_today, net_saved_avg,
         remaining_week, saved_this_year, sum_of_card_held, sum_of_credits, sum_of_debits,
     },
     services::{
@@ -27,14 +28,20 @@ struct ApiQuery {
     date: Option<String>,
 }
 
-async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) -> PublicItem {
+async fn build_public_item(pool: &DbPool, target_date: Option<NaiveDate>) -> PublicItem {
+    let tz = parse_timezone(&get_setting(pool, String::from("timezone"), String::from("Europe/London")).await);
+    let target_date: Option<DateTime<Tz>> = target_date.and_then(|nd| {
+        tz.from_local_datetime(&nd.and_hms_opt(0, 0, 0).unwrap())
+            .earliest()
+    });
+
     let data_from_db = get_collection(pool).await;
     let mut results: Vec<JsonObject> = Vec::new();
     for object in data_from_db {
         results.push(JsonObject::from(object));
     }
 
-    let real_now = Local::now();
+    let real_now = Utc::now().with_timezone(&tz);
     let now = target_date.unwrap_or(real_now);
 
     let currency_rates = build_currency_rate_map(pool).await;
@@ -133,15 +140,9 @@ async fn index(
     State(pool): State<DbPool>,
     Query(params): Query<ApiQuery>,
 ) -> Json<PublicItem> {
-    let target_date: Option<DateTime<Local>> = params.date.and_then(|d| {
-        NaiveDate::parse_from_str(&d, "%Y-%m-%d")
-            .ok()
-            .and_then(|nd| {
-                Local
-                    .from_local_datetime(&nd.and_hms_opt(0, 0, 0).unwrap())
-                    .single()
-            })
-    });
+    let target_date: Option<NaiveDate> = params
+        .date
+        .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
     Json(build_public_item(&pool, target_date).await)
 }
 
