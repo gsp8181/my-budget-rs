@@ -56,6 +56,8 @@ export default function CategoryPage({ page }) {
     if (Object.keys(changed).length === 0) return oldRow;
     try {
       await api.put(`/${apiPath}/${newRow.id}`, changed);
+      // Keep our copy in step with the table, or the edit is lost on the next re-render.
+      setRows((prev) => prev.map((r) => (r.id === newRow.id ? newRow : r)));
       afterChange();
       return newRow;
     } catch (e) {
