@@ -1,6 +1,5 @@
 import * as React from 'react';
-import { useEffect, useState } from 'react';
-import api from '../api';
+import useCurrentUser from '../hooks/useCurrentUser';
 import PropTypes from 'prop-types';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
@@ -15,23 +14,7 @@ import MenuButton from './MenuButton';
 import MenuContent from './MenuContent';
 
 function SideMenuMobile({ open, toggleDrawer }) {
-  const [user, setUser] = useState({ username: 'Loading...', email: 'Loading...' });
-
-  React.useEffect(() => {
-    let mounted = true;
-    api.get('/me')
-      .then((data) => {
-        if (mounted && data) {
-          setUser({ username: data.username || user.username, email: data.email || user.email });
-        }
-      })
-      .catch(() => {
-        // keep defaults on error
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const user = useCurrentUser();
   return (
     <Drawer
       anchor="right"

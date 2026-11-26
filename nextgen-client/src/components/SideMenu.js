@@ -1,6 +1,5 @@
 import * as React from 'react';
-import { useEffect, useState } from 'react';
-import api from '../api';
+import useCurrentUser from '../hooks/useCurrentUser';
 import { styled } from '@mui/material/styles';
 import Avatar from '@mui/material/Avatar';
 import MuiDrawer, { drawerClasses } from '@mui/material/Drawer';
@@ -24,23 +23,7 @@ const Drawer = styled(MuiDrawer)({
 });
 
 export default function SideMenu() {
-  const [user, setUser] = useState({ username: 'Loading...', email: 'Loading...' });
-
-  useEffect(() => {
-    let mounted = true;
-    api.get('/me')
-      .then((data) => {
-        if (mounted && data) {
-          setUser({ username: data.username || user.username, email: data.email || user.email });
-        }
-      })
-      .catch(() => {
-        /* ignore errors, keep defaults */
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const user = useCurrentUser();
   return (
     <Drawer
       variant="permanent"

@@ -56,14 +56,7 @@ export default function App(props) {
                   <Route key={page.path} path={page.path} element={
                     <>
                       <Header pageName={page.title} />
-                      <CategoryPage
-                        apiPath={page.apiPath}
-                        pageName={page.itemName}
-                        columnDefs={page.columns}
-                        defaultFormValues={Object.fromEntries(page.fields.map((f) => [f.name, '']))}
-                        formFields={page.fields}
-                        useCards={page.fields.some((f) => f.type === 'card')}
-                      />
+                      <CategoryPage page={page} />
                     </>
                   } />
                 ))}
