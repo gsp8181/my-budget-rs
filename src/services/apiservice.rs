@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Days, Local, Months, NaiveDate, TimeZone};
+use chrono::{DateTime, Datelike, Days, Months, NaiveDate, TimeZone};
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use rust_decimal_macros::dec;
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ pub fn apply_currency_conversion(item: &mut JsonObject, currency_rates: &HashMap
     }
 }
 
-pub fn get_items_today(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, now: &DateTime<Local>) -> Vec<JsonObject> {
+pub fn get_items_today<Z: TimeZone>(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, now: &DateTime<Z>) -> Vec<JsonObject> {
     let mut results: Vec<JsonObject> = Vec::new();
 
     let mut dates: Vec<i32> = vec![now.day() as i32];
@@ -85,6 +85,25 @@ pub fn sum_of_card_held(data: &[JsonObject], currency_rates: &HashMap<i32, Decim
     amount
 }
 
+/// Totals of the two debt lists, in GBP: (owed to me, I owe).
+/// "Debt Owed To Me" (/api/debt) is stored as debt/credit and
+/// "Debt I Owe" (/api/debtto) as debt/debit.
+pub fn debt_totals(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>) -> (Decimal, Decimal) {
+    let mut owed_to_me = dec!(0);
+    let mut i_owe = dec!(0);
+    for mut obj in data.iter().cloned() {
+        if !matches!(obj.category, Category::debt) {
+            continue;
+        }
+        apply_currency_conversion(&mut obj, currency_rates);
+        match obj.dbName {
+            Db_Name::credit => owed_to_me += obj.amount,
+            Db_Name::debit => i_owe += obj.amount,
+        }
+    }
+    (owed_to_me, i_owe)
+}
+
 pub fn sum_of_credits(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>, total_pay: Decimal) -> Decimal {
     let mut amount = dec!(0);
     for mut bank_obj in data.iter().cloned() {
@@ -123,10 +142,10 @@ pub fn sum_of_debits(data: &[JsonObject], currency_rates: &HashMap<i32, Decimal>
     amount
 }
 
-pub fn calculate(
+pub fn calculate<Z: TimeZone>(
     data: &Vec<JsonObject>,
     currency_rates: &HashMap<i32, Decimal>,
-    now: &DateTime<Local>,
+    now: &DateTime<Z>,
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
@@ -142,10 +161,7 @@ pub fn calculate(
     };
 
     //TODO: split this off into can be used for calculation?
-    let mut next_payday = match Local.with_ymd_and_hms(now.year(), now.month(), payday, 0, 0, 0) {
-        chrono::offset::LocalResult::Single(single) => single,
-        _ => panic!("Time zone error"), //todo: 500
-    };
+    let mut next_payday = midnight(&now.timezone(), now.year(), now.month(), payday);
 
     let after_payday = now.day() >= payday;
 
@@ -153,7 +169,8 @@ pub fn calculate(
         next_payday = next_payday + Months::new(1);
     }
 
-    let end_of_month_for_payday = match Local.with_ymd_and_hms(
+    let end_of_month_for_payday = midnight(
+        &now.timezone(),
         next_payday.year(),
         next_payday.month(),
         if calc_to_eom {
@@ -161,13 +178,7 @@ pub fn calculate(
         } else {
             payday
         },
-        0,
-        0,
-        0,
-    ) {
-        chrono::offset::LocalResult::Single(single) => single,
-        _ => panic!("Time zone error"), //todo: 500
-    };
+    );
 
     let days_to_calculate = match Decimal::from_i64((end_of_month_for_payday - now).num_days() + 1) //TODO: what 
     {
@@ -234,10 +245,10 @@ pub fn calculate(
     amount
 }
 
-pub fn can_be_used_in_calculation(
+pub fn can_be_used_in_calculation<Z: TimeZone>(
     record: &JsonObject,
-    now: &DateTime<Local>,
-    next_payday: &DateTime<Local>,
+    now: &DateTime<Z>,
+    next_payday: &DateTime<Z>,
     after_payday: bool,
 ) -> bool {
     if record.day.is_none() {
@@ -250,21 +261,14 @@ pub fn can_be_used_in_calculation(
         _ => (),
     }
 
-    let date_obj: DateTime<Local> = if get_days_from_month(now.year(), now.month())
+    let date_obj: DateTime<Z> = if get_days_from_month(now.year(), now.month())
         >= (record.day.unwrap() as u32)
     //TODO: panics if -1?
     //TODO: days in year month
     {
-        match Local.with_ymd_and_hms(now.year(), now.month(), record.day.unwrap() as u32, 0, 0, 0) {
-            //TODO: panics if -1?
-            chrono::offset::LocalResult::Single(single) => single,
-            _ => panic!("Time zone error"), //todo: 500
-        }
+        midnight(&now.timezone(), now.year(), now.month(), record.day.unwrap() as u32) //TODO: panics if -1?
     } else {
-        match Local.with_ymd_and_hms(now.year(), now.month() + 1, 1, 0, 0, 0) {
-            chrono::offset::LocalResult::Single(single) => single,
-            _ => panic!("Time zone error"), //todo: 500
-        }
+        midnight(&now.timezone(), now.year(), now.month() + 1, 1)
     };
 
     if after_payday && (record.day.unwrap() as u32) < next_payday.day() {
@@ -279,10 +283,10 @@ pub fn can_be_used_in_calculation(
     false
 }
 
-pub fn remaining_week(
+pub fn remaining_week<Z: TimeZone>(
     data: &Vec<JsonObject>,
     currency_rates: &HashMap<i32, Decimal>,
-    now: &DateTime<Local>,
+    now: &DateTime<Z>,
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
@@ -304,10 +308,10 @@ pub fn remaining_week(
     amount
 }
 
-pub fn end_of_week(
+pub fn end_of_week<Z: TimeZone>(
     data: &Vec<JsonObject>,
     currency_rates: &HashMap<i32, Decimal>,
-    now: &DateTime<Local>,
+    now: &DateTime<Z>,
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
@@ -329,7 +333,7 @@ pub fn end_of_week(
     amount
 }
 
-fn weekday(time: &DateTime<Local>) -> Decimal {
+fn weekday<Z: TimeZone>(time: &DateTime<Z>) -> Decimal {
     //TODO: convert
     match Decimal::from_u32(time.weekday() as u32) {
         Some(result) => result + dec!(1),
@@ -337,10 +341,10 @@ fn weekday(time: &DateTime<Local>) -> Decimal {
     }
 }
 
-pub fn full_weekend(
+pub fn full_weekend<Z: TimeZone>(
     data: &Vec<JsonObject>,
     currency_rates: &HashMap<i32, Decimal>,
-    now: &DateTime<Local>,
+    now: &DateTime<Z>,
     daily_rate: Decimal,
     payday: u32,
     weekday_saving: Decimal,
@@ -361,11 +365,11 @@ pub fn full_weekend(
     amount
 }
 
-pub fn get_items_between(
+pub fn get_items_between<Z: TimeZone>(
     data: &[JsonObject],
     currency_rates: &HashMap<i32, Decimal>,
-    from: &DateTime<Local>,
-    to: &DateTime<Local>,
+    from: &DateTime<Z>,
+    to: &DateTime<Z>,
 ) -> Vec<JsonObject> {
     let mut results: Vec<JsonObject> = Vec::new();
 
@@ -408,6 +412,15 @@ pub fn get_items_between(
     }
 
     results
+}
+
+/// Start of the given day in `tz`. Picks the earlier instant if midnight is
+/// ambiguous, and 01:00 if midnight is skipped by a DST change.
+fn midnight<Z: TimeZone>(tz: &Z, year: i32, month: u32, day: u32) -> DateTime<Z> {
+    tz.with_ymd_and_hms(year, month, day, 0, 0, 0)
+        .earliest()
+        .or_else(|| tz.with_ymd_and_hms(year, month, day, 1, 0, 0).earliest())
+        .expect("Time zone error") //todo: 500
 }
 
 pub fn get_days_from_month(year: i32, month: u32) -> u32 {

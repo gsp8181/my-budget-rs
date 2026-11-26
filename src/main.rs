@@ -58,6 +58,7 @@ const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 #[tokio::main]
 async fn main() {
     let db_url = "storage/database.sqlite";
+    services::txlog::init(db_url);
     let manager = Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
     let pool: DbPool = Arc::new(Pool::builder(manager).build().expect("Failed to build pool"));
 
@@ -103,6 +104,8 @@ fn build_app(pool: DbPool) -> Router {
         .nest("/api/cardheld", cardheld::router())
         .nest("/api/settings", settings::router())
         .nest("/api/currency", currency::router())
+        .nest("/api/timezone", timezone::router())
+        .nest("/api/people", people::router())
         .nest("/api", api::router())
         .fallback_service(ServeDir::new("wwwroot").fallback(ServeFile::new("wwwroot/index.html")));
 

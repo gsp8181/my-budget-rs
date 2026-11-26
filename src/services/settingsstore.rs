@@ -2,6 +2,7 @@ use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};
 
 use crate::models::settings::{settings, SettingDatabaseObject};
+use crate::services::txlog::{self, Action};
 use crate::{AppError, DbPool};
 
 pub async fn get_collection(pool: &DbPool) -> Vec<SettingDatabaseObject> {
@@ -66,7 +67,7 @@ pub async fn set_setting(pool: &DbPool, name: String, value: String) {
             value,
         };
         let conn = pool.get().await.expect("pool connection");
-        let _affected: SettingDatabaseObject = conn
+        let affected: SettingDatabaseObject = conn
             .interact(move |conn| {
                 diesel::update(settings::table)
                     .filter(settings::name.eq(object.name))
@@ -77,6 +78,7 @@ pub async fn set_setting(pool: &DbPool, name: String, value: String) {
             .await
             .expect("interact error")
             .expect("diesel error");
+        txlog::record(Action::Update, "settings", &affected);
     } else {
         let new_obj = SettingDatabaseObject {
             id: None,
@@ -84,7 +86,7 @@ pub async fn set_setting(pool: &DbPool, name: String, value: String) {
             value,
         };
         let conn = pool.get().await.expect("pool connection");
-        let _result: SettingDatabaseObject = conn
+        let result: SettingDatabaseObject = conn
             .interact(move |conn| {
                 diesel::insert_into(settings::table)
                     .values(new_obj)
@@ -94,5 +96,6 @@ pub async fn set_setting(pool: &DbPool, name: String, value: String) {
             })
             .await
             .expect("interact error");
+        txlog::record(Action::Create, "settings", &result);
     }
 }

@@ -866,3 +866,73 @@ fn calc_following_month_no_day_items_not_double_counted() {
     assert_eq!(base, with_setting);
 }
 
+
+fn debt_item(db_name: Db_Name, amount: rust_decimal::Decimal, currency_id: Option<i32>) -> JsonObject {
+    JsonObject {
+        id: None,
+        oldId: None,
+        category: Category::debt,
+        name: String::from("debt"),
+        day: None,
+        amount,
+        cardid: None,
+        dbName: db_name,
+        currency_id,
+    }
+}
+
+#[test]
+fn debt_totals_offsets_owed_to_me_against_i_owe() {
+    let mut data = vec![
+        debt_item(Db_Name::credit, dec!(50), None), // owed to me
+        debt_item(Db_Name::credit, dec!(25), Some(2)), // owed to me, in a foreign currency
+        debt_item(Db_Name::debit, dec!(30), None), // I owe
+        recurring_debit(5, dec!(999)),              // not debt, ignored
+    ];
+    data.push(debt_item(Db_Name::debit, dec!(10), None)); // I owe
+    let rates: HashMap<i32, rust_decimal::Decimal> = HashMap::from([(2, dec!(0.5))]);
+
+    let (owed_to_me, i_owe) = apiservice::debt_totals(&data, &rates);
+    assert_eq!(dec!(100), owed_to_me); // 50 + 25 / 0.5
+    assert_eq!(dec!(40), i_owe);
+    assert_eq!(dec!(60), owed_to_me - i_owe);
+}
+
+#[test]
+fn test_parse_timezone() {
+    use crate::services::timezone::{parse_timezone, FALLBACK_TIMEZONE};
+    use chrono_tz::Tz;
+    assert_eq!(parse_timezone("Europe/London"), Some(Tz::Europe__London));
+    assert_eq!(parse_timezone(" America/New_York "), Some(Tz::America__New_York));
+    assert_eq!(parse_timezone("UTC"), Some(Tz::UTC));
+    // Invalid values are rejected; callers then fall back to Europe/London
+    assert_eq!(parse_timezone(""), None);
+    assert_eq!(parse_timezone("Mars/Olympus_Mons"), None);
+    assert_eq!(parse_timezone("BST"), None);
+    assert_eq!(parse_timezone("BST").unwrap_or(FALLBACK_TIMEZONE), Tz::Europe__London);
+}
+
+#[test]
+fn test_timezone_changes_today() {
+    use chrono::Utc;
+    use chrono_tz::Tz;
+    // 23:30 UTC on Sep 21 is already Sep 22 in London (BST, +01:00)
+    let instant = Utc.with_ymd_and_hms(2024, 9, 21, 23, 30, 0).unwrap();
+
+    let london = apiservice::get_items_today(&test_data(), &HashMap::new(), &instant.with_timezone(&Tz::Europe__London));
+    assert!(!london.is_empty());
+    assert!(london.iter().all(|x| x.day == Some(22)));
+
+    let utc = apiservice::get_items_today(&test_data(), &HashMap::new(), &instant.with_timezone(&Tz::UTC));
+    assert!(utc.iter().all(|x| x.day == Some(21)));
+}
+
+#[test]
+fn test_calculate_in_named_timezone() {
+    use chrono_tz::Tz;
+    let now = Tz::Europe__London.with_ymd_and_hms(2024, 9, 1, 22, 13, 15).unwrap();
+    assert_eq!(
+        dec!(1616.33),
+        apiservice::calculate(&test_data(), &HashMap::new(), &now, dec!(0), 25, dec!(0), true, false)
+    );
+}

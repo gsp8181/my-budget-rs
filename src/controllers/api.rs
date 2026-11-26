@@ -4,7 +4,8 @@ use axum::{
     extract::{Query, State},
     Json,
 };
-use chrono::{DateTime, Local, NaiveDate, TimeZone};
+use chrono::{DateTime, NaiveDate, TimeZone, Utc};
+use chrono_tz::Tz;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::{Deserialize, Serialize};
@@ -12,12 +13,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
     models::item::{JsonObject, PublicItem},
     services::apiservice::{
-        calculate, end_of_week, full_weekend, get_items_between, get_items_today, net_saved_avg,
+        calculate, debt_totals, end_of_week, full_weekend, get_items_between, get_items_today, net_saved_avg,
         remaining_week, saved_this_year, sum_of_card_held, sum_of_credits, sum_of_debits,
     },
     services::{
         currencystore::build_currency_rate_map, itemstore::get_collection,
-        settingsstore::get_setting,
+        settingsstore::get_setting, timezone::get_configured_timezone,
     },
     DbPool,
 };
@@ -27,14 +28,14 @@ struct ApiQuery {
     date: Option<String>,
 }
 
-async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) -> PublicItem {
+async fn build_public_item(pool: &DbPool, tz: Tz, target_date: Option<DateTime<Tz>>) -> PublicItem {
     let data_from_db = get_collection(pool).await;
     let mut results: Vec<JsonObject> = Vec::new();
     for object in data_from_db {
         results.push(JsonObject::from(object));
     }
 
-    let real_now = Local::now();
+    let real_now = Utc::now().with_timezone(&tz);
     let now = target_date.unwrap_or(real_now);
 
     let currency_rates = build_currency_rate_map(pool).await;
@@ -73,6 +74,8 @@ async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) 
     } else {
         panic!("failed to read calc_following_month setting")
     };
+
+    let (debt_owed_to_me, debt_i_owe) = debt_totals(&results, &currency_rates);
 
     PublicItem {
         amount: calculate(
@@ -121,6 +124,9 @@ async fn build_public_item(pool: &DbPool, target_date: Option<DateTime<Local>>) 
         card_held_total: sum_of_card_held(&results, &currency_rates),
         net_saved_avg: net_saved_avg(&results, &currency_rates, daily_rate, total_pay),
         saved_this_year: saved_this_year(&results, &currency_rates, daily_rate, total_pay),
+        debt_owed_to_me,
+        debt_i_owe,
+        net_debt: debt_owed_to_me - debt_i_owe,
         today: if target_date.is_some() {
             get_items_between(&results, &currency_rates, &real_now, &now)
         } else {
@@ -133,16 +139,13 @@ async fn index(
     State(pool): State<DbPool>,
     Query(params): Query<ApiQuery>,
 ) -> Json<PublicItem> {
-    let target_date: Option<DateTime<Local>> = params.date.and_then(|d| {
+    let tz = get_configured_timezone(&pool).await;
+    let target_date: Option<DateTime<Tz>> = params.date.and_then(|d| {
         NaiveDate::parse_from_str(&d, "%Y-%m-%d")
             .ok()
-            .and_then(|nd| {
-                Local
-                    .from_local_datetime(&nd.and_hms_opt(0, 0, 0).unwrap())
-                    .single()
-            })
+            .and_then(|nd| tz.from_local_datetime(&nd.and_hms_opt(0, 0, 0).unwrap()).earliest())
     });
-    Json(build_public_item(&pool, target_date).await)
+    Json(build_public_item(&pool, tz, target_date).await)
 }
 
 #[derive(Serialize)]

@@ -1,47 +1,77 @@
 import * as React from 'react';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+
+import { alpha } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
-import ProTip from './ProTip';
-import Dashboard from './dashboard/Dashboard'
+import Stack from '@mui/material/Stack';
+import AppNavbar from './components/AppNavbar';
+import Header from './components/Header';
+import HomePage from './pages/HomePage';
+import SideMenu from './components/SideMenu';
+import CategoryPage from './pages/CategoryPage';
+import SettingsPage from './pages/SettingsPage';
+import { LookupsProvider } from './LookupsContext';
+import { categoryPages, homePage, settingsPage } from './pageConfig';
+import AppTheme from './theme/AppTheme';
 
-function Copyright() {
+export default function App(props) {
   return (
-    <Typography
-      variant="body2"
-      align="center"
-      sx={{
-        color: 'text.secondary',
-      }}
-    >
-      {'Copyright © '}
-      <Link color="inherit" href="https://mui.com/">
-        Your Website
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
-  );
-}
-
-// export default function App() {
-//   return (
-//     <Container maxWidth="sm">
-//       <Box sx={{ my: 4 }}>
-//         <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-//           Material UI Create React App example
-//         </Typography>
-//         <ProTip />
-//         <Copyright />
-//       </Box>
-//     </Container>
-//   );
-// }
-
-export default function App() {
-  return (
-    <Dashboard>
-    </Dashboard>
+    <LookupsProvider>
+    <AppTheme {...props}>
+      <CssBaseline enableColorScheme />
+      <Router>
+        <Box sx={{ display: 'flex', height: '100dvh', overflow: 'hidden' }}>
+          <SideMenu />
+          <AppNavbar />
+          {/* Main content */}
+          <Box
+            component="main"
+            sx={(theme) => ({
+              flexGrow: 1,
+              height: '100%',
+              backgroundColor: theme.vars
+                ? `rgba(${theme.vars.palette.background.defaultChannel} / 1)`
+                : alpha(theme.palette.background.default, 1),
+              overflowY: 'auto',
+            })}
+          >
+            <Stack
+              spacing={2}
+              sx={{
+                alignItems: 'center',
+                mx: { xs: 0, md: 3 },
+                pb: 5,
+                mt: { xs: 8, md: 0 },
+              }}
+            >
+              <Routes>
+                <Route path={homePage.path} element={
+                  <>
+                    <Header pageName={homePage.title} />
+                    <HomePage />
+                  </>
+                } />
+                {categoryPages.map((page) => (
+                  <Route key={page.path} path={page.path} element={
+                    <>
+                      <Header pageName={page.title} />
+                      <CategoryPage page={page} />
+                    </>
+                  } />
+                ))}
+                <Route path={settingsPage.path} element={
+                  <>
+                    <Header pageName={settingsPage.title} />
+                    <SettingsPage />
+                  </>
+                } />
+              </Routes>
+            </Stack>
+          </Box>
+        </Box>
+      </Router>
+    </AppTheme>
+    </LookupsProvider>
   );
 }

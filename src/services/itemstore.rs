@@ -2,6 +2,7 @@ use diesel::prelude::*;
 use diesel::{ExpressionMethods, RunQueryDsl};
 
 use crate::models::item::{item, Category, DatabaseObject, Db_Name, JsonEntryObject};
+use crate::services::txlog::{self, Action};
 use crate::{AppError, DbPool};
 
 pub async fn get_collection(pool: &DbPool) -> Vec<DatabaseObject> {
@@ -80,6 +81,7 @@ pub async fn insert_record(
         amount: new_db_obj.amount.unwrap().to_string(),
         cardid: new_db_obj.cardid,
         currency_id: new_db_obj.currency_id,
+        person: new_db_obj.person.and_then(normalise_person),
     };
 
     let post_value = new_obj.clone();
@@ -95,6 +97,7 @@ pub async fn insert_record(
         .map_err(AppError::from)?;
 
     new_obj.id = id;
+    txlog::record(Action::Create, "item", &new_obj);
     Ok(new_obj)
 }
 
@@ -137,6 +140,12 @@ pub async fn modify_record_by_id(
     if new_db_obj.currency_id.is_some() {
         dbitem.currency_id = new_db_obj.currency_id;
     }
+    // The changeset below skips None fields, so person is set explicitly to allow clearing it.
+    let person = match new_db_obj.person {
+        Some(p) => normalise_person(p),
+        None => dbitem.person.clone(),
+    };
+    dbitem.person = None;
 
     let conn = pool.get().await?;
     let affected = conn
@@ -145,13 +154,14 @@ pub async fn modify_record_by_id(
                 .filter(item::category.eq(category2))
                 .filter(item::dbName.eq(dbname2))
                 .filter(item::id.eq(id))
-                .set(dbitem)
+                .set((dbitem, item::person.eq(person)))
                 .returning(item::all_columns)
                 .get_result(conn)
         })
         .await?
         .map_err(AppError::from)?;
 
+    txlog::record(Action::Update, "item", &affected);
     Ok(affected)
 }
 
@@ -162,16 +172,49 @@ pub async fn delete_record_by_id(
     id: i32,
 ) -> Result<Option<()>, AppError> {
     let conn = pool.get().await?;
-    let affected = conn
+    let deleted: Option<DatabaseObject> = conn
         .interact(move |conn| {
             diesel::delete(item::table)
                 .filter(item::id.eq(id))
                 .filter(item::dbName.eq(db_name))
                 .filter(item::category.eq(category))
-                .execute(conn)
+                .returning(item::all_columns)
+                .get_result(conn)
+                .optional()
         })
         .await?
         .map_err(AppError::from)?;
 
-    Ok((affected == 1).then_some(()))
+    if let Some(obj) = &deleted {
+        txlog::record(Action::Delete, "item", obj);
+    }
+
+    Ok(deleted.map(|_| ()))
+}
+
+/// Trims a person's name; blank means "no person".
+fn normalise_person(person: String) -> Option<String> {
+    let trimmed = person.trim();
+    (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+/// Distinct people named on debt items (both lists), alphabetically, for suggestions.
+pub async fn get_debt_people(pool: &DbPool) -> Result<Vec<String>, AppError> {
+    let conn = pool.get().await?;
+    let people: Vec<Option<String>> = conn
+        .interact(move |conn| {
+            item::table
+                .filter(item::category.eq(Category::debt))
+                .filter(item::person.is_not_null())
+                .select(item::person)
+                .distinct()
+                .load(conn)
+        })
+        .await?
+        .map_err(AppError::from)?;
+
+    let mut people: Vec<String> = people.into_iter().flatten().collect();
+    people.sort_by_key(|p| p.to_lowercase());
+    people.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    Ok(people)
 }
