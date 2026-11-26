@@ -9,6 +9,7 @@ pub mod debtto;
 pub mod generate_controller;
 pub mod misccredit;
 pub mod miscdebit;
+pub mod people;
 pub mod regularcredit;
 pub mod regularpayment;
 pub mod settings;

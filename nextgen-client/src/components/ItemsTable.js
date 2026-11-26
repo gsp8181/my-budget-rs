@@ -7,12 +7,14 @@ import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import { DataGrid, GridActionsCellItem, GridRowModes } from '@mui/x-data-grid';
 import { useLookups } from '../LookupsContext';
 import { cardLabel, currencySymbol, lookupOptions } from './lookupOptions';
+import PersonInput from './PersonInput';
 
 // Editable table of budget items. Click a cell to edit its row; the tick saves
 // (via onRowUpdate) and the cross cancels. Amounts show their currency symbol,
 // card columns show the card's name, and a currency column appears while editing.
 //
-//   columns      DataGrid columns from pageConfig.js (a column with isCard: true is a card picker)
+//   columns      DataGrid columns from pageConfig.js (isCard: true makes a card picker,
+//                isPerson: true a free-text name box with suggestions)
 //   onRowUpdate  async (newRow, oldRow) => row to keep; throw to reject the edit
 //   onDelete     (id) => void, called when a row's delete button is clicked
 //   onError      (message) => void
@@ -57,6 +59,21 @@ export default function ItemsTable({ rows, columns, onRowUpdate, onDelete, onErr
           ...col,
           editable: true,
           renderCell: ({ row, value }) => `${currencyById[row.currency_id]?.symbol ?? '£'}${value}`,
+        };
+      }
+      if (col.isPerson) {
+        return {
+          ...col,
+          editable: true,
+          renderEditCell: (params) => (
+            <PersonInput
+              value={params.value}
+              onChange={(text) => params.api.setEditCellValue({ id: params.id, field: params.field, value: text })}
+              fullWidth
+              size="small"
+              textFieldProps={{ variant: 'standard', autoFocus: params.hasFocus }}
+            />
+          ),
         };
       }
       if (col.isCard) {

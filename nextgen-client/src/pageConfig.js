@@ -10,7 +10,8 @@
 //   apiPath   backend endpoint under /api/
 //   itemName  used for the "Add <itemName>" button and dialog
 //   columns   DataGrid column definitions for the table
-//   fields    inputs in the "Add" dialog (type 'currency' / 'card' render dropdowns)
+//   fields    inputs in the "Add" dialog (type 'currency' / 'card' render dropdowns;
+//             'person' is free text with suggestions of people already entered)
 //
 // Note on the debt pages: /api/debt is stored as a credit (money owed to me)
 // and /api/debtto as a debit (money I owe).
@@ -33,6 +34,7 @@ const nameCol = (headerName, extra = {}) => ({ field: 'name', headerName, flex: 
 const amountCol = { field: 'amount', headerName: 'Amount', width: 90 };
 const dayCol = (headerName = 'Day') => ({ field: 'day', headerName, width: 55 });
 const cardCol = { field: 'cardid', headerName: 'Card', width: 100, isCard: true };
+const personCol = (headerName) => ({ field: 'person', headerName, flex: 1, minWidth: 100, isPerson: true });
 
 // ---- Reusable form fields ----
 const nameField = (label, placeholder) => ({ name: 'name', label, placeholder });
@@ -40,6 +42,7 @@ const amountField = { name: 'amount', label: 'Amount', type: 'number', inputProp
 const dayField = { name: 'day', label: 'Day of Month', type: 'number', inputProps: { min: 1, max: 31 } };
 const cardField = { name: 'cardid', label: 'Card Used', type: 'card' };
 const currencyField = { name: 'currency_id', label: 'Currency', type: 'currency' };
+const personField = (label, placeholder) => ({ name: 'person', label, placeholder, type: 'person' });
 
 export const homePage = { path: '/', menuLabel: 'Home', icon: HomeRoundedIcon, title: 'Home' };
 export const settingsPage = { path: '/settings', menuLabel: 'Settings', icon: SettingsRoundedIcon, title: 'Settings' };
@@ -109,8 +112,8 @@ export const categoryPages = [
     title: 'Debt Owed To Me',
     apiPath: 'debt',
     itemName: 'Debt',
-    columns: [nameCol('Debtor'), amountCol],
-    fields: [nameField('Debtor', 'John Doe'), amountField, currencyField],
+    columns: [personCol('Debtor'), nameCol('Description', { minWidth: 100 }), amountCol],
+    fields: [personField('Debtor (optional)', 'John Doe'), nameField('Description', 'Pizza'), amountField, currencyField],
   },
   {
     path: '/misccredit',
@@ -155,8 +158,8 @@ export const categoryPages = [
     title: 'Debt I Owe',
     apiPath: 'debtto',
     itemName: 'Debt',
-    columns: [nameCol('Debtee'), amountCol],
-    fields: [nameField('Debtee', 'Owed for Pizza'), amountField, currencyField],
+    columns: [personCol('Debtee'), nameCol('Description', { minWidth: 100 }), amountCol],
+    fields: [personField('Debtee (optional)', 'John Doe'), nameField('Description', 'Pizza'), amountField, currencyField],
   },
   {
     path: '/miscdebit',

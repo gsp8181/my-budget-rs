@@ -61,6 +61,8 @@ pub struct DatabaseObject {
     pub cardid: Option<i32>,
     pub dbName: Db_Name,
     pub currency_id: Option<i32>,
+    /// Who the debt is with (debtor / debtee). Optional, free text.
+    pub person: Option<String>,
 }
 
 diesel::table! {
@@ -78,6 +80,7 @@ diesel::table! {
         cardid -> Nullable<Integer>,
         dbName -> Text,
         currency_id -> Nullable<Integer>,
+        person -> Nullable<Text>,
     }
 }
 
@@ -85,6 +88,8 @@ diesel::table! {
 #[allow(non_snake_case)]
 pub struct JsonEntryObject {
     pub name: Option<String>,
+    /// Debtor / debtee. On update, an empty string clears it and a missing field leaves it unchanged.
+    pub person: Option<String>,
     pub day: Option<String>,
     pub amount: Option<Decimal>,
     pub cardid: Option<i32>,

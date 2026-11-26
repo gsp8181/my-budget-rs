@@ -21,10 +21,10 @@ export default function CategoryPage({ page }) {
   const { apiPath, itemName, columns, fields } = page;
   const { currencies, refresh: refreshLookups } = useLookups();
 
-  // Card balances are the options in other pages' card dropdowns, so changing
-  // them means the shared lookups need reloading.
+  // Card balances feed the card dropdowns and debts feed the person suggestions,
+  // so changing either means the shared lookups need reloading.
   const afterChange = useCallback(() => {
-    if (apiPath === 'cardbalance') refreshLookups();
+    if (['cardbalance', 'debt', 'debtto'].includes(apiPath)) refreshLookups();
   }, [apiPath, refreshLookups]);
 
   const [rows, setRows] = useState([]);

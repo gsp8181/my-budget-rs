@@ -7,9 +7,11 @@ import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import { useLookups } from '../LookupsContext';
 import { cardLabel, currencyLabel, lookupOptions } from './lookupOptions';
+import PersonInput from './PersonInput';
 
 // The "Add <item>" form. Inputs come from the page's `fields` in pageConfig.js;
-// fields of type 'currency' or 'card' become dropdowns of the shared lookups.
+// fields of type 'currency' or 'card' become dropdowns of the shared lookups, and
+// 'person' is a text box with suggestions.
 export default function AddItemDialog({ open, title, fields, values, onChange, onSubmit, onClose }) {
   const { currencies, cards, status, refresh } = useLookups();
 
@@ -24,6 +26,23 @@ export default function AddItemDialog({ open, title, fields, values, onChange, o
       margin: 'normal',
       autoFocus: idx === 0,
     };
+
+    if (field.type === 'person') {
+      return (
+        <PersonInput
+          key={field.name}
+          value={values[field.name]}
+          onChange={(text) => onChange({ ...values, [field.name]: text })}
+          textFieldProps={{
+            label: field.label,
+            placeholder: field.placeholder,
+            fullWidth: true,
+            margin: 'normal',
+            autoFocus: idx === 0,
+          }}
+        />
+      );
+    }
 
     if (field.type === 'currency' || field.type === 'card') {
       const options = field.type === 'currency'

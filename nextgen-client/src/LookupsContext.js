@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import api from './api';
 
-// Shared dropdown data (currencies and cards), with refresh-on-demand so dropdowns
+// Shared dropdown data (currencies, cards and the people named on debts), with refresh-on-demand so dropdowns
 // recover from a failed first load and pick up items added elsewhere in the app.
 
 const RETRY_MS = 5000;
@@ -9,6 +9,7 @@ const RETRY_MS = 5000;
 const LookupsContext = createContext({
   currencies: [],
   cards: [],
+  people: [],
   status: 'loading',
   refresh: () => Promise.resolve(),
 });
@@ -16,6 +17,7 @@ const LookupsContext = createContext({
 export function LookupsProvider({ children }) {
   const [currencies, setCurrencies] = useState([]);
   const [cards, setCards] = useState([]);
+  const [people, setPeople] = useState([]);
   // 'loading' until the first successful load, then 'ok'; 'error' while the latest attempt failed.
   const [status, setStatus] = useState('loading');
   const inflight = useRef(null);
@@ -25,9 +27,12 @@ export function LookupsProvider({ children }) {
     if (inflight.current) return inflight.current;
     const request = (async () => {
       try {
-        const [cur, crd] = await Promise.all([api.get('/currency'), api.get('/cardbalance')]);
+        const [cur, crd, ppl] = await Promise.all([
+          api.get('/currency'), api.get('/cardbalance'), api.get('/people'),
+        ]);
         setCurrencies(cur);
         setCards(crd);
+        setPeople(ppl);
         setStatus('ok');
       } catch {
         // Keep whatever lists we already had; just flag the failure.
@@ -58,7 +63,7 @@ export function LookupsProvider({ children }) {
   }, [status, refresh]);
 
   return (
-    <LookupsContext.Provider value={{ currencies, cards, status, refresh }}>
+    <LookupsContext.Provider value={{ currencies, cards, people, status, refresh }}>
       {children}
     </LookupsContext.Provider>
   );
